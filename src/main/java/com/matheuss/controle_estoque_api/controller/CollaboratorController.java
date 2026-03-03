@@ -7,6 +7,7 @@ import com.matheuss.controle_estoque_api.service.CollaboratorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; // Import necessário
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -21,6 +22,7 @@ public class CollaboratorController {
     private final CollaboratorService collaboratorService;
 
     @PostMapping
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<CollaboratorResponseDTO> create(@RequestBody @Valid CollaboratorCreateDTO dto) {
         CollaboratorResponseDTO created = collaboratorService.create(dto);
         URI location = ServletUriComponentsBuilder
@@ -32,16 +34,19 @@ public class CollaboratorController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<List<CollaboratorResponseDTO>> getAll() {
         return ResponseEntity.ok(collaboratorService.getAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<CollaboratorResponseDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(collaboratorService.getById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<CollaboratorResponseDTO> update(
             @PathVariable Long id,
             @RequestBody @Valid CollaboratorUpdateDTO dto
@@ -50,6 +55,7 @@ public class CollaboratorController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         collaboratorService.delete(id);
         return ResponseEntity.noContent().build();

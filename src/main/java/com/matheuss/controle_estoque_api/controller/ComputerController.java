@@ -1,6 +1,6 @@
 package com.matheuss.controle_estoque_api.controller;
 
-import com.matheuss.controle_estoque_api.domain.enums.AssetStatus; 
+import com.matheuss.controle_estoque_api.domain.enums.AssetStatus;
 import com.matheuss.controle_estoque_api.dto.ComputerCreateDTO;
 import com.matheuss.controle_estoque_api.dto.ComputerResponseDTO;
 import com.matheuss.controle_estoque_api.dto.ComputerUpdateDTO;
@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -26,6 +27,7 @@ public class ComputerController {
     private ComputerService computerService;
 
     @PostMapping
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> createComputer(@RequestBody @Valid ComputerCreateDTO computerDTO) {
         ComputerResponseDTO createdComputer = computerService.createComputer(computerDTO);
         URI location = ServletUriComponentsBuilder
@@ -36,30 +38,29 @@ public class ComputerController {
         return ResponseEntity.created(location).body(createdComputer);
     }
 
-    // Método atualizado para receber parâmetros de filtro.
     @GetMapping
-@Operation(summary = "Lista computadores com paginação, ordenação e filtros")
-public ResponseEntity<Page<ComputerResponseDTO>> getAllComputers(
-        // Parâmetros de filtro
-        @RequestParam(required = false) AssetStatus status,
-        @RequestParam(required = false) String name,
-        @RequestParam(required = false) String patrimonio,
-        @RequestParam(required = false) String serialNumber,
+    @Operation(summary = "Lista computadores com paginação, ordenação e filtros")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<Page<ComputerResponseDTO>> getAllComputers(
+            @RequestParam(required = false) AssetStatus status,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String patrimonio,
+            @RequestParam(required = false) String serialNumber,
+            Pageable pageable) {
         
-        // Paginação
-        Pageable pageable) {
-    
-    Page<ComputerResponseDTO> computersPage = computerService.getAllComputers(status, name, patrimonio, serialNumber, pageable);
-    return ResponseEntity.ok(computersPage);
-}
+        Page<ComputerResponseDTO> computersPage = computerService.getAllComputers(status, name, patrimonio, serialNumber, pageable);
+        return ResponseEntity.ok(computersPage);
+    }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> getComputerById(@PathVariable Long id) {
         ComputerResponseDTO computer = computerService.getComputerById(id);
         return ResponseEntity.ok(computer);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> updateComputer(@PathVariable Long id, @RequestBody @Valid ComputerUpdateDTO computerDTO) {
         ComputerResponseDTO updatedComputer = computerService.updateComputer(id, computerDTO);
         return ResponseEntity.ok(updatedComputer);
@@ -67,6 +68,7 @@ public ResponseEntity<Page<ComputerResponseDTO>> getAllComputers(
 
     @Operation(summary = "Troca um componente instalado em um computador por outro que está em estoque.")
     @PatchMapping("/{computerId}/swap-component")
+    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> swapComponent(
             @PathVariable Long computerId,
             @Valid @RequestBody SwapComponentRequestDTO dto) {
