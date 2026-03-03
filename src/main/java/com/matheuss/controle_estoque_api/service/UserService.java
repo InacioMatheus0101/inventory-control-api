@@ -2,6 +2,8 @@ package com.matheuss.controle_estoque_api.service;
 
 import com.matheuss.controle_estoque_api.dto.UserCreateDTO;
 import com.matheuss.controle_estoque_api.dto.UserResponseDTO;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import
+import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException; // Import
 import com.matheuss.controle_estoque_api.mapper.UserMapper;
 import com.matheuss.controle_estoque_api.security.User;
 import com.matheuss.controle_estoque_api.security.UserRepository;
@@ -32,13 +34,17 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO createUser(UserCreateDTO dto) {
+        // Verifica se o nome de usuário já existe
         if (userRepository.findByUsername(dto.username()).isPresent()) {
-            throw new IllegalStateException("Nome de usuário já existe: " + dto.username());
+            // Lança exceção de recurso existente
+            throw new ResourceAlreadyExistsException("Nome de usuário já existe: " + dto.username());
         }
 
+        // Busca os perfis no banco de dados
         Set<UserRole> roles = dto.roles().stream()
                 .map(roleName -> roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new IllegalArgumentException("Perfil não encontrado: " + roleName)))
+                        // Lança exceção de regra de negócio se um perfil não for encontrado
+                        .orElseThrow(() -> new BusinessRuleException("Perfil (role) inválido: " + roleName)))
                 .collect(Collectors.toSet());
 
         User newUser = new User();

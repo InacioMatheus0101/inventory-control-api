@@ -4,11 +4,11 @@ import com.matheuss.controle_estoque_api.domain.Category;
 import com.matheuss.controle_estoque_api.dto.CategoryCreateDTO;
 import com.matheuss.controle_estoque_api.dto.CategoryResponseDTO;
 import com.matheuss.controle_estoque_api.dto.CategoryUpdateDTO;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import da nova exceção
 import com.matheuss.controle_estoque_api.mapper.CategoryMapper;
-// import com.matheuss.controle_estoque_api.repository.AssetRepository; // 1. REMOVER ESTE IMPORT
 import com.matheuss.controle_estoque_api.repository.CategoryRepository;
-import com.matheuss.controle_estoque_api.repository.ComponentRepository; // 2. ADICIONAR ESTE IMPORT
-import com.matheuss.controle_estoque_api.repository.ComputerRepository;  // 3. ADICIONAR ESTE IMPORT
+import com.matheuss.controle_estoque_api.repository.ComponentRepository;
+import com.matheuss.controle_estoque_api.repository.ComputerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,9 +22,8 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-    // private final AssetRepository assetRepository; // 4. REMOVER ESTA INJEÇÃO
-    private final ComputerRepository computerRepository;  // 5. ADICIONAR ESTA INJEÇÃO
-    private final ComponentRepository componentRepository; // 6. ADICIONAR ESTA INJEÇÃO
+    private final ComputerRepository computerRepository;
+    private final ComponentRepository componentRepository;
     private final CategoryMapper categoryMapper;
 
     @Transactional
@@ -63,12 +62,10 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID: " + id));
 
-        // ====================================================================
-        // == VERIFICAÇÃO DE SEGURANÇA FINAL E CORRETA ==
-        // ====================================================================
         // Verifica se a categoria está em uso por algum Computador OU por algum Componente.
         if (computerRepository.existsByCategoryId(id) || componentRepository.existsByCategoryId(id)) {
-            throw new IllegalStateException("Não é possível deletar a categoria '" + category.getName() + "' pois ela está associada a um ou mais ativos.");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Não é possível deletar a categoria '" + category.getName() + "' pois ela está associada a um ou mais ativos.");
         }
         
         categoryRepository.deleteById(id);

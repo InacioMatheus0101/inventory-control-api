@@ -4,6 +4,7 @@ import com.matheuss.controle_estoque_api.domain.Collaborator;
 import com.matheuss.controle_estoque_api.dto.CollaboratorCreateDTO;
 import com.matheuss.controle_estoque_api.dto.CollaboratorResponseDTO;
 import com.matheuss.controle_estoque_api.dto.CollaboratorUpdateDTO;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import da nova exceção
 import com.matheuss.controle_estoque_api.mapper.CollaboratorMapper;
 import com.matheuss.controle_estoque_api.repository.CollaboratorRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -44,7 +45,7 @@ public class CollaboratorService {
     @Transactional
     public CollaboratorResponseDTO update(Long id, CollaboratorUpdateDTO dto) {
         Collaborator entity = collaboratorRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Colaborator não encontrado com o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Colaborador não encontrado com o ID: " + id));
 
         collaboratorMapper.updateEntityFromDto(dto, entity);
 
@@ -55,11 +56,12 @@ public class CollaboratorService {
     @Transactional
     public void delete(Long id) {
         Collaborator collaborator = collaboratorRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Colaborador não encontrado com o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Colaborador não encontrado com o ID: " + id));
 
         // VERIFICAÇÃO DE SEGURANÇA: O colaborador possui ativos?
         if (collaborator.getAssets() != null && !collaborator.getAssets().isEmpty()) {
-            throw new IllegalStateException("Não é possível deletar o colaborador '" + collaborator.getName() + "' pois ele possui " + collaborator.getAssets().size() + " ativo(s) alocado(s).");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Não é possível deletar o colaborador '" + collaborator.getName() + "' pois ele possui " + collaborator.getAssets().size() + " ativo(s) alocado(s).");
         }
 
         collaboratorRepository.deleteById(id);

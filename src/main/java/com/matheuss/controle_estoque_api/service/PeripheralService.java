@@ -8,6 +8,8 @@ import com.matheuss.controle_estoque_api.domain.history.HistoryEventType;
 import com.matheuss.controle_estoque_api.dto.PeripheralCreateDTO;
 import com.matheuss.controle_estoque_api.dto.PeripheralResponseDTO;
 import com.matheuss.controle_estoque_api.dto.PeripheralUpdateDTO;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import
+import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException; // Import
 import com.matheuss.controle_estoque_api.mapper.PeripheralMapper;
 import com.matheuss.controle_estoque_api.repository.AssetRepository;
 import com.matheuss.controle_estoque_api.repository.PeripheralRepository;
@@ -15,15 +17,13 @@ import com.matheuss.controle_estoque_api.repository.specification.PeripheralSpec
 import com.matheuss.controle_estoque_api.service.support.EntityResolver;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page; // Import adicionado
-import org.springframework.data.domain.Pageable; // Import adicionado
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,12 +37,13 @@ public class PeripheralService {
 
     @Transactional
     public PeripheralResponseDTO createPeripheral(PeripheralCreateDTO dto) {
-        // LÓGICA EXISTENTE PRESERVADA
         if (dto.getPatrimonio() != null && !dto.getPatrimonio().isBlank() && assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-            throw new IllegalStateException("Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
+            // Lança exceção de recurso existente
+            throw new ResourceAlreadyExistsException("Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
         }
         if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && assetRepository.existsByAssetTag(dto.getAssetTag())) {
-            throw new IllegalStateException("Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
+            // Lança exceção de recurso existente
+            throw new ResourceAlreadyExistsException("Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
         }
         
         Peripheral entity = peripheralMapper.toEntity(dto);
@@ -55,26 +56,21 @@ public class PeripheralService {
         return peripheralMapper.toResponseDTO(saved);
     }
 
-    // ====================================================================
-    // == MÉTODO GETALL ATUALIZADO PARA PAGINAÇÃO ==
-    // ====================================================================
     @Transactional(readOnly = true)
-public Page<PeripheralResponseDTO> getAllPeripherals(
-        AssetStatus status, String type, String name, Pageable pageable) {
-    
-    // Constrói a query dinâmica combinando os filtros.
-    Specification<Peripheral> spec = Specification.where(PeripheralSpecification.hasStatus(status))
-            .and(PeripheralSpecification.typeContains(type))
-            .and(PeripheralSpecification.nameContains(name));
+    public Page<PeripheralResponseDTO> getAllPeripherals(
+            AssetStatus status, String type, String name, Pageable pageable) {
+        
+        Specification<Peripheral> spec = Specification.where(PeripheralSpecification.hasStatus(status))
+                .and(PeripheralSpecification.typeContains(type))
+                .and(PeripheralSpecification.nameContains(name));
 
-    Page<Peripheral> peripheralPage = peripheralRepository.findAll(spec, pageable);
-    
-    return peripheralPage.map(peripheralMapper::toResponseDTO);
-}
+        Page<Peripheral> peripheralPage = peripheralRepository.findAll(spec, pageable);
+        
+        return peripheralPage.map(peripheralMapper::toResponseDTO);
+    }
 
     @Transactional(readOnly = true)
     public PeripheralResponseDTO getPeripheralById(Long id) {
-        // LÓGICA EXISTENTE PRESERVADA
         return peripheralRepository.findById(id)
                 .map(peripheralMapper::toResponseDTO)
                 .orElseThrow(() -> new EntityNotFoundException("Periférico não encontrado com o ID: " + id));
@@ -82,19 +78,20 @@ public Page<PeripheralResponseDTO> getAllPeripherals(
 
     @Transactional
     public PeripheralResponseDTO updatePeripheral(Long id, PeripheralUpdateDTO dto) {
-        // LÓGICA EXISTENTE PRESERVADA
         Peripheral peripheral = resolver.requirePeripheral(id);
         Location newLocation = resolver.optionalLocation(dto.getLocationId());
         Collaborator newCollaborator = resolver.optionalCollaborator(dto.getCollaboratorId());
 
         if (dto.getPatrimonio() != null && !dto.getPatrimonio().isBlank() && !Objects.equals(peripheral.getPatrimonio(), dto.getPatrimonio())) {
             if (assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-                throw new IllegalStateException("Operação não permitida: Já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
+                // Lança exceção de recurso existente
+                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
             }
         }
         if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && !Objects.equals(peripheral.getAssetTag(), dto.getAssetTag())) {
             if (assetRepository.existsByAssetTag(dto.getAssetTag())) {
-                throw new IllegalStateException("Operação não permitida: Já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
+                // Lança exceção de recurso existente
+                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
             }
         }
 
@@ -110,7 +107,8 @@ public Page<PeripheralResponseDTO> getAllPeripherals(
         Collaborator oldCollaborator = peripheral.getCollaborator();
 
         if (newLocation != null && newCollaborator != null) {
-            throw new IllegalStateException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
         }
 
         peripheral.setLocation(newLocation);

@@ -4,9 +4,10 @@ import com.matheuss.controle_estoque_api.domain.*;
 import com.matheuss.controle_estoque_api.domain.enums.AssetStatus;
 import com.matheuss.controle_estoque_api.domain.enums.EquipmentState;
 import com.matheuss.controle_estoque_api.domain.history.HistoryEventType;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import da nova exceção
 import com.matheuss.controle_estoque_api.repository.AssetRepository;
-import com.matheuss.controle_estoque_api.repository.LocationRepository;
 import com.matheuss.controle_estoque_api.repository.CollaboratorRepository;
+import com.matheuss.controle_estoque_api.repository.LocationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -71,22 +72,19 @@ public class AssetAllocationService {
         recordReturn(asset, previousCollaborator, previousLocation);
     }
 
-    // ====================================================================
-    // == NOVO MÉTODO PARA DESCARTE (SOFT DELETE) ==
-    // ====================================================================
     @Transactional
     public void disposeAsset(Long assetId) {
         Asset asset = requireAsset(assetId);
 
-        // REGRA DE NEGÓCIO: Não se pode descartar um ativo que já está descartado ou em uso.
         if (asset.getStatus() == AssetStatus.DESCARTADO) {
-            throw new IllegalStateException("Operação não permitida: O ativo já foi descartado.");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: O ativo já foi descartado.");
         }
         if (asset.getStatus() == AssetStatus.EM_USO) {
-            throw new IllegalStateException("Operação não permitida: O ativo não pode ser descartado pois está em uso.");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: O ativo não pode ser descartado pois está em uso.");
         }
 
-        // Se for um computador, processa seus componentes para retorná-los ao estoque.
         if (asset instanceof Computer) {
             Computer computer = (Computer) asset;
             if (computer.getComponents() != null && !computer.getComponents().isEmpty()) {
@@ -99,35 +97,35 @@ public class AssetAllocationService {
             }
         }
 
-        // ATUALIZA O STATUS E REGISTRA O EVENTO
         asset.setStatus(AssetStatus.DESCARTADO);
-        asset.setEquipmentState(EquipmentState.DESCARTADO); // Atualiza o estado de conservação também
-        asset.setCollaborator(null); // Garante que não está vinculado a ninguém
-        asset.setLocation(null);     // Garante que não está vinculado a nenhum lugar
+        asset.setEquipmentState(EquipmentState.DESCARTADO);
+        asset.setCollaborator(null);
+        asset.setLocation(null);
 
         assetHistoryService.registerEvent(asset, HistoryEventType.DESCARTE, "Ativo foi marcado como descartado.", null);
     }
 
-
-    // =========================
-    // Helpers (Business rules & Entity loading)
-    // =========================
+    // --- Helpers ---
 
     private void validateCanAssignFromStock(Asset asset) {
         if (asset.getStatus() != AssetStatus.EM_ESTOQUE) {
-            throw new IllegalStateException("Operação não permitida: o ativo '" + asset.getAssetTag() + "' não está em estoque.");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: o ativo '" + asset.getAssetTag() + "' não está em estoque.");
         }
         if (asset.getCollaborator() != null || asset.getLocation() != null) {
-            throw new IllegalStateException("Operação não permitida: o ativo já está alocado.");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: o ativo já está alocado.");
         }
     }
 
     private void validateCanUnassignToStock(Asset asset) {
         if (asset.getStatus() != AssetStatus.EM_USO) {
-            throw new IllegalStateException("Operação não permitida: o ativo não está em uso para ser devolvido.");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: o ativo não está em uso para ser devolvido.");
         }
         if (asset.getCollaborator() == null && asset.getLocation() == null) {
-            throw new IllegalStateException("Operação não permitida: o ativo não está alocado a ninguém/nenhuma PA.");
+            // Lança a exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: o ativo não está alocado a ninguém/nenhuma PA.");
         }
     }
 

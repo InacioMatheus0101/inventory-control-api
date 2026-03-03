@@ -9,11 +9,13 @@ import com.matheuss.controle_estoque_api.domain.history.HistoryEventType;
 import com.matheuss.controle_estoque_api.dto.ComputerCreateDTO;
 import com.matheuss.controle_estoque_api.dto.ComputerResponseDTO;
 import com.matheuss.controle_estoque_api.dto.ComputerUpdateDTO;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import
+import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException; // Import
 import com.matheuss.controle_estoque_api.mapper.ComputerMapper;
 import com.matheuss.controle_estoque_api.repository.AssetRepository;
 import com.matheuss.controle_estoque_api.repository.ComponentRepository;
 import com.matheuss.controle_estoque_api.repository.ComputerRepository;
-import com.matheuss.controle_estoque_api.repository.specification.ComputerSpecification; 
+import com.matheuss.controle_estoque_api.repository.specification.ComputerSpecification;
 import com.matheuss.controle_estoque_api.service.support.EntityResolver;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +25,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -39,12 +40,13 @@ public class ComputerService {
 
     @Transactional
     public ComputerResponseDTO createComputer(ComputerCreateDTO dto) {
-        // Lógica existente preservada
         if (assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-            throw new IllegalStateException("Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
+            // Lança exceção de recurso existente
+            throw new ResourceAlreadyExistsException("Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
         }
         if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && assetRepository.existsByAssetTag(dto.getAssetTag())) {
-            throw new IllegalStateException("Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
+            // Lança exceção de recurso existente
+            throw new ResourceAlreadyExistsException("Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
         }
         
         Computer entity = computerMapper.toEntity(dto);
@@ -57,25 +59,22 @@ public class ComputerService {
         return computerMapper.toResponseDTO(saved);
     }
 
-    // Método atualizado para usar Specifications para filtros dinâmicos.
- @Transactional(readOnly = true)
-public Page<ComputerResponseDTO> getAllComputers(
-        AssetStatus status, String name, String patrimonio, String serialNumber, Pageable pageable) {
-    
-    // Constrói a query dinâmica combinando todos os filtros com "and".
-    Specification<Computer> spec = Specification.where(ComputerSpecification.hasStatus(status))
-            .and(ComputerSpecification.nameContains(name))
-            .and(ComputerSpecification.patrimonioContains(patrimonio))
-            .and(ComputerSpecification.serialNumberContains(serialNumber));
+    @Transactional(readOnly = true)
+    public Page<ComputerResponseDTO> getAllComputers(
+            AssetStatus status, String name, String patrimonio, String serialNumber, Pageable pageable) {
+        
+        Specification<Computer> spec = Specification.where(ComputerSpecification.hasStatus(status))
+                .and(ComputerSpecification.nameContains(name))
+                .and(ComputerSpecification.patrimonioContains(patrimonio))
+                .and(ComputerSpecification.serialNumberContains(serialNumber));
 
-    Page<Computer> computerPage = computerRepository.findAll(spec, pageable);
-    
-    return computerPage.map(computerMapper::toResponseDTO);
-}
+        Page<Computer> computerPage = computerRepository.findAll(spec, pageable);
+        
+        return computerPage.map(computerMapper::toResponseDTO);
+    }
 
     @Transactional(readOnly = true)
     public ComputerResponseDTO getComputerById(Long id) {
-        // Lógica existente preservada
         Computer entity = computerRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new EntityNotFoundException("Computador não encontrado com o ID: " + id));
         return computerMapper.toResponseDTO(entity);
@@ -83,19 +82,20 @@ public Page<ComputerResponseDTO> getAllComputers(
 
     @Transactional
     public ComputerResponseDTO updateComputer(Long id, ComputerUpdateDTO dto) {
-        // Lógica existente preservada
         Computer computer = resolver.requireComputer(id);
         Location newLocation = resolver.optionalLocation(dto.getLocationId());
         Collaborator newCollaborator = resolver.optionalCollaborator(dto.getCollaboratorId());
 
         if (dto.getPatrimonio() != null && !dto.getPatrimonio().isBlank() && !Objects.equals(computer.getPatrimonio(), dto.getPatrimonio())) {
             if (assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-                throw new IllegalStateException("Operação não permitida: Já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
+                // Lança exceção de recurso existente
+                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
             }
         }
         if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && !Objects.equals(computer.getAssetTag(), dto.getAssetTag())) {
             if (assetRepository.existsByAssetTag(dto.getAssetTag())) {
-                throw new IllegalStateException("Operação não permitida: Já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
+                // Lança exceção de recurso existente
+                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
             }
         }
 
@@ -108,7 +108,8 @@ public Page<ComputerResponseDTO> getAllComputers(
         Collaborator oldCollaborator = computer.getCollaborator();
 
         if (newLocation != null && newCollaborator != null) {
-            throw new IllegalStateException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
         }
 
         computer.setLocation(newLocation);
@@ -145,23 +146,25 @@ public Page<ComputerResponseDTO> getAllComputers(
 
     @Transactional
     public ComputerResponseDTO swapComponent(Long computerId, Long componentToUninstallId, Long componentToInstallId) {
-        // Lógica existente preservada
         Computer computer = resolver.requireComputer(computerId);
         Component componentToUninstall = resolver.requireComponent(componentToUninstallId);
         Component componentToInstall = resolver.requireComponent(componentToInstallId);
 
         if (!computer.getComponents().contains(componentToUninstall)) {
-            throw new IllegalStateException(String.format("Operação não permitida: O componente '%s' (ID: %d) não está instalado no computador '%s'.",
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException(String.format("Operação não permitida: O componente '%s' (ID: %d) não está instalado no computador '%s'.",
                     componentToUninstall.getName(), componentToUninstallId, computer.getName()));
         }
 
         if (componentToInstall.getStatus() != AssetStatus.EM_ESTOQUE) {
-            throw new IllegalStateException(String.format("Operação não permitida: O componente '%s' (ID: %d) não está em estoque e não pode ser instalado.",
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException(String.format("Operação não permitida: O componente '%s' (ID: %d) não está em estoque e não pode ser instalado.",
                     componentToInstall.getName(), componentToInstallId));
         }
 
         if (!Objects.equals(componentToUninstall.getType(), componentToInstall.getType())) {
-            throw new IllegalStateException(String.format("Operação não permitida: A troca só pode ser feita entre componentes do mesmo tipo. Tipo do componente atual: '%s', Tipo do novo componente: '%s'.",
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException(String.format("Operação não permitida: A troca só pode ser feita entre componentes do mesmo tipo. Tipo do componente atual: '%s', Tipo do novo componente: '%s'.",
                     componentToUninstall.getType(), componentToInstall.getType()));
         }
 

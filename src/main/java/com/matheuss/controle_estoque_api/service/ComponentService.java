@@ -9,6 +9,8 @@ import com.matheuss.controle_estoque_api.domain.history.HistoryEventType;
 import com.matheuss.controle_estoque_api.dto.ComponentCreateDTO;
 import com.matheuss.controle_estoque_api.dto.ComponentResponseDTO;
 import com.matheuss.controle_estoque_api.dto.ComponentUpdateDTO;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import
+import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException; // Import
 import com.matheuss.controle_estoque_api.mapper.ComponentMapper;
 import com.matheuss.controle_estoque_api.repository.AssetRepository;
 import com.matheuss.controle_estoque_api.repository.ComponentRepository;
@@ -16,15 +18,13 @@ import com.matheuss.controle_estoque_api.repository.specification.ComponentSpeci
 import com.matheuss.controle_estoque_api.service.support.EntityResolver;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page; // Import adicionado
-import org.springframework.data.domain.Pageable; // Import adicionado
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,12 +38,13 @@ public class ComponentService {
 
     @Transactional
     public ComponentResponseDTO createComponent(ComponentCreateDTO dto) {
-        // LÓGICA EXISTENTE PRESERVADA
         if (dto.getPatrimonio() != null && !dto.getPatrimonio().isBlank() && assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-            throw new IllegalStateException("Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
+            // Lança exceção de recurso existente
+            throw new ResourceAlreadyExistsException("Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
         }
         if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && assetRepository.existsByAssetTag(dto.getAssetTag())) {
-            throw new IllegalStateException("Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
+            // Lança exceção de recurso existente
+            throw new ResourceAlreadyExistsException("Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
         }
 
         Component entity = componentMapper.toEntity(dto);
@@ -57,26 +58,21 @@ public class ComponentService {
         return componentMapper.toResponseDTO(saved);
     }
 
-    // ====================================================================
-    // == MÉTODO GETALL ATUALIZADO PARA PAGINAÇÃO ==
-    // ====================================================================
     @Transactional(readOnly = true)
-public Page<ComponentResponseDTO> getAllComponents(
-        AssetStatus status, String type, String name, Pageable pageable) {
-    
-    // Constrói a query dinâmica combinando os filtros.
-    Specification<Component> spec = Specification.where(ComponentSpecification.hasStatus(status))
-            .and(ComponentSpecification.typeContains(type))
-            .and(ComponentSpecification.nameContains(name));
+    public Page<ComponentResponseDTO> getAllComponents(
+            AssetStatus status, String type, String name, Pageable pageable) {
+        
+        Specification<Component> spec = Specification.where(ComponentSpecification.hasStatus(status))
+                .and(ComponentSpecification.typeContains(type))
+                .and(ComponentSpecification.nameContains(name));
 
-    Page<Component> componentPage = componentRepository.findAll(spec, pageable);
-    
-    return componentPage.map(componentMapper::toResponseDTO);
-}
+        Page<Component> componentPage = componentRepository.findAll(spec, pageable);
+        
+        return componentPage.map(componentMapper::toResponseDTO);
+    }
 
     @Transactional(readOnly = true)
     public ComponentResponseDTO getComponentById(Long id) {
-        // LÓGICA EXISTENTE PRESERVADA
         return componentRepository.findById(id)
                 .map(componentMapper::toResponseDTO)
                 .orElseThrow(() -> new EntityNotFoundException("Componente não encontrado com o ID: " + id));
@@ -84,19 +80,20 @@ public Page<ComponentResponseDTO> getAllComponents(
 
     @Transactional
     public ComponentResponseDTO updateComponent(Long id, ComponentUpdateDTO dto) {
-        // LÓGICA EXISTENTE PRESERVADA
         Component component = resolver.requireComponent(id);
         Location newLocation = resolver.optionalLocation(dto.getLocationId());
         Collaborator newCollaborator = resolver.optionalCollaborator(dto.getCollaboratorId());
 
         if (dto.getPatrimonio() != null && !dto.getPatrimonio().isBlank() && !Objects.equals(component.getPatrimonio(), dto.getPatrimonio())) {
             if (assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-                throw new IllegalStateException("Operação não permitida: Já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
+                // Lança exceção de recurso existente
+                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
             }
         }
         if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && !Objects.equals(component.getAssetTag(), dto.getAssetTag())) {
             if (assetRepository.existsByAssetTag(dto.getAssetTag())) {
-                throw new IllegalStateException("Operação não permitida: Já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
+                // Lança exceção de recurso existente
+                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
             }
         }
 
@@ -109,10 +106,12 @@ public Page<ComponentResponseDTO> getAllComponents(
         Collaborator oldCollaborator = component.getCollaborator();
 
         if ((newLocation != null || newCollaborator != null) && component.getComputer() != null) {
-            throw new IllegalStateException("Operação não permitida: Um componente instalado em um computador não pode ser alocado para uma pessoa ou localização.");
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: Um componente instalado em um computador não pode ser alocado para uma pessoa ou localização.");
         }
         if (newLocation != null && newCollaborator != null) {
-            throw new IllegalStateException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
         }
 
         component.setLocation(newLocation);
@@ -149,15 +148,16 @@ public Page<ComponentResponseDTO> getAllComponents(
 
     @Transactional
     public ComponentResponseDTO installComponent(Long componentId, Long computerId) {
-        // LÓGICA EXISTENTE PRESERVADA
         Component component = resolver.requireComponent(componentId);
         Computer computer = resolver.requireComputer(computerId);
 
         if (component.getComputer() != null) {
-            throw new IllegalStateException("Operação não permitida: O componente já está instalado no computador com ID " + component.getComputer().getId());
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: O componente já está instalado no computador com ID " + component.getComputer().getId());
         }
         if (component.getStatus() != AssetStatus.EM_ESTOQUE) {
-            throw new IllegalStateException("Operação não permitida: Apenas componentes 'EM ESTOQUE' podem ser instalados.");
+            // Lança exceção de regra de negócio
+            throw new BusinessRuleException("Operação não permitida: Apenas componentes 'EM ESTOQUE' podem ser instalados.");
         }
 
         component.setComputer(computer);
