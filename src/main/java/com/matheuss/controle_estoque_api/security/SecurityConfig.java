@@ -1,5 +1,6 @@
 package com.matheuss.controle_estoque_api.security;
 
+import com.matheuss.controle_estoque_api.exception.CustomAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,14 +23,40 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity 
+@EnableMethodSecurity // Habilita o uso de @PreAuthorize nos controllers
 public class SecurityConfig {
 
     @Autowired
     private SecurityFilter securityFilter;
 
+    @Autowired
+    private CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
     @Bean
-    public PasswordEncoder passwordEncoder( ) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http ) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable( ))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CONFIGURAÇÃO DE AUTORIZAÇÃO SIMPLIFICADA
+                .authorizeHttpRequests(authorize -> authorize
+                        // Apenas endpoints públicos são definidos aqui
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Qualquer outra requisição precisa estar autenticada.
+                        // As regras de perfil (role) agora estão nos controllers.
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint(customAuthenticationEntryPoint)
+                )
+                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build( );
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
@@ -39,39 +66,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http ) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable( ))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                
-                // === INÍCIO DA ADIÇÃO DE CORS ===
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // === FIM DA ADIÇÃO DE CORS ===
-                
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        
-                        // Adicionando as regras de autorização que faltavam
-                        .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
-                        .requestMatchers("/api/**").hasAnyRole("ADMIN", "TECHNICIAN")
-
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build( );
-    }
-
-    // === BEAN DE CONFIGURAÇÃO DE CORS ADICIONADO ===
-    @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000", 
-                "http://localhost:4200", 
-                "http://localhost:5173"  
+                "http://localhost:3000",
+                "http://localhost:4200",
+                "http://localhost:5173"
          ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));

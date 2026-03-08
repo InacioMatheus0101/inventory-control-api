@@ -1,31 +1,42 @@
 package com.matheuss.controle_estoque_api.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.AllArgsConstructor;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.Objects;
 
 @Entity
 @Table(name = "category")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Category {
 
-    /**
-     * @Id: Define este campo como a chave primária (o identificador).
-     * @GeneratedValue(strategy = GenerationType.IDENTITY): Configura o ID para ser
-     * gerado automaticamente pelo banco de dados (auto-incremento).
-     */
-    @Id // <-- ESTA ANOTAÇÃO É A SOLUÇÃO PARA O ERRO
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // <-- E esta é para o auto-incremento
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    // Construtor para facilitar a criação em testes, se necessário
+    public Category(String name) {
+        this.name = name;
+    }
+
+    // Implementação manual e segura de equals() e hashCode()
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Category category = (Category) o;
+        return id != null && Objects.equals(id, category.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

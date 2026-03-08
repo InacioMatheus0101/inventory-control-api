@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -21,13 +21,13 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("/api/computers" )
+@PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
 public class ComputerController {
 
     @Autowired
     private ComputerService computerService;
 
     @PostMapping
-    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> createComputer(@RequestBody @Valid ComputerCreateDTO computerDTO) {
         ComputerResponseDTO createdComputer = computerService.createComputer(computerDTO);
         URI location = ServletUriComponentsBuilder
@@ -40,27 +40,24 @@ public class ComputerController {
 
     @GetMapping
     @Operation(summary = "Lista computadores com paginação, ordenação e filtros")
-    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<Page<ComputerResponseDTO>> getAllComputers(
             @RequestParam(required = false) AssetStatus status,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String patrimonio,
             @RequestParam(required = false) String serialNumber,
             Pageable pageable) {
-        
+
         Page<ComputerResponseDTO> computersPage = computerService.getAllComputers(status, name, patrimonio, serialNumber, pageable);
         return ResponseEntity.ok(computersPage);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> getComputerById(@PathVariable Long id) {
         ComputerResponseDTO computer = computerService.getComputerById(id);
         return ResponseEntity.ok(computer);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> updateComputer(@PathVariable Long id, @RequestBody @Valid ComputerUpdateDTO computerDTO) {
         ComputerResponseDTO updatedComputer = computerService.updateComputer(id, computerDTO);
         return ResponseEntity.ok(updatedComputer);
@@ -68,11 +65,10 @@ public class ComputerController {
 
     @Operation(summary = "Troca um componente instalado em um computador por outro que está em estoque.")
     @PatchMapping("/{computerId}/swap-component")
-    @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<ComputerResponseDTO> swapComponent(
             @PathVariable Long computerId,
             @Valid @RequestBody SwapComponentRequestDTO dto) {
-        
+
         ComputerResponseDTO updatedComputer = computerService.swapComponent(
                 computerId,
                 dto.getComponentToUninstallId(),

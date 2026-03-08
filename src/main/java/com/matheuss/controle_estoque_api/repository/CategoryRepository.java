@@ -1,11 +1,14 @@
 package com.matheuss.controle_estoque_api.repository;
 
+import com.matheuss.controle_estoque_api.domain.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.matheuss.controle_estoque_api.domain.Category;
+import java.util.Optional;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    // O corpo fica vazio! O Spring Data JPA cuida de tudo.
+
+   
+    Optional<Category> findByName(String name);
 }

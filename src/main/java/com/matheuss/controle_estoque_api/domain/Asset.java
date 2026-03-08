@@ -4,8 +4,9 @@ import com.matheuss.controle_estoque_api.domain.enums.AssetStatus;
 import com.matheuss.controle_estoque_api.domain.enums.EquipmentState;
 import com.matheuss.controle_estoque_api.domain.history.AssetHistory;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;     
+import lombok.Setter;      
+import lombok.ToString;   
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
 import org.hibernate.envers.RelationTargetAuditMode;
@@ -17,13 +18,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "asset")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "asset_type")
-@Data
-@EqualsAndHashCode(of = "id")
+@Getter // Use @Getter em vez de @Data
+@Setter // Use @Setter em vez de @Data
+@ToString(exclude = {"category", "location", "collaborator", "history"}) // Exclui campos LAZY do toString()
 @EntityListeners(AuditingEntityListener.class)
 @Audited
 public abstract class Asset {
@@ -32,7 +35,7 @@ public abstract class Asset {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true) 
+    @Column(unique = true)
     private String assetTag;
 
     @Column(unique = true)
@@ -52,9 +55,6 @@ public abstract class Asset {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    // =======================
-    // CAMPOS ADMINISTRATIVOS
-    // =======================
     private LocalDate dataRecebimento;
     private String chamadoCompra;
     private String sc;
@@ -62,22 +62,13 @@ public abstract class Asset {
     private String nf;
     private String centroCusto;
 
-    // ===========================
-    // CAMPOS DO CONTROLE (JIRA)
-    // ===========================
     private String ticketJira;
     private String ticketDevolucaoJira;
 
-    // ===========================
-    // RELACIONAMENTOS
-    // ===========================
-
-    // Adiciona a relação com Category na classe pai, para que todas as entidades filhas a herdem.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Category category;
-    
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
@@ -89,9 +80,6 @@ public abstract class Asset {
     @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Collaborator collaborator;
 
-    // ===========================
-    // AUDITORIA (JPA)
-    // ===========================
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -100,10 +88,21 @@ public abstract class Asset {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    // ===========================
-    // HISTÓRICO (DE EVENTOS DE NEGÓCIO)
-    // ===========================
     @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @NotAudited
     private List<AssetHistory> history = new ArrayList<>();
+
+    // Implementação manual e segura de equals() e hashCode()
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Asset asset = (Asset) o;
+        return id != null && Objects.equals(id, asset.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

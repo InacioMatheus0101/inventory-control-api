@@ -16,18 +16,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users" )
 @RequiredArgsConstructor
+// Garante que apenas usuários com o perfil 'ADMIN' possam acessar qualquer endpoint deste controller.
+@PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserCreateDTO dto) {
         UserResponseDTO createdUser = userService.createUser(dto);
         URI location = ServletUriComponentsBuilder

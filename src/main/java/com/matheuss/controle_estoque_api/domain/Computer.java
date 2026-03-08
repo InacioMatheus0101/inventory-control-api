@@ -2,19 +2,20 @@ package com.matheuss.controle_estoque_api.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import org.hibernate.envers.Audited; // Importar se necessário (já vem de Asset)
-import org.hibernate.envers.NotAudited; // 1. IMPORTAR
-import org.hibernate.envers.RelationTargetAuditMode; // Importar
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.hibernate.envers.NotAudited;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @DiscriminatorValue("COMPUTER")
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString(callSuper = true, exclude = {"components"}) // Herda o toString() de Asset e exclui a lista de componentes
 public class Computer extends Asset {
 
     private String name;
@@ -24,18 +25,14 @@ public class Computer extends Asset {
     private int storageSizeInGB;
     private String os;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    // CORREÇÃO QUE JÁ FIZEMOS ANTES (garantindo que está aqui)
-    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
-    private Category category;
+    // A RELAÇÃO COM CATEGORY FOI REMOVIDA DAQUI.
+    // ELA AGORA EXISTE APENAS NA CLASSE MÃE 'Asset'.
 
-    // --- RELACIONAMENTO BIDIRECIONAL (APENAS COMPONENTES) ---
     @OneToMany(mappedBy = "computer", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, orphanRemoval = true)
-    @JsonIgnore // Mantido para evitar loops na serialização JSON
-    // ====================================================================
-    // == CORREÇÃO FINAL PARA O ERRO DE INICIALIZAÇÃO DO ENVERS ==
-    // ====================================================================
-    @NotAudited // 2. ADICIONAR ESTA ANOTAÇÃO
+    @JsonIgnore
+    @NotAudited
     private List<Component> components = new ArrayList<>();
+
+    // A implementação de equals() e hashCode() é herdada de Asset,
+    // então não precisamos reescrevê-la aqui.
 }
