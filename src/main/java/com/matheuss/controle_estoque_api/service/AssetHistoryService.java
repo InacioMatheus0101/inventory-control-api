@@ -14,8 +14,14 @@ public class AssetHistoryService {
 
     private final AssetHistoryRepository assetHistoryRepository;
 
+   
     public void registerEvent(Asset asset, HistoryEventType eventType, String details, Collaborator associatedUser) {
-        AssetHistory historyRecord = new AssetHistory(asset, eventType, details, associatedUser);
+        this.registerEvent(asset, eventType, details, null, associatedUser);
+    }
+
+
+    public void registerEvent(Asset asset, HistoryEventType eventType, String details, String ticketNumber, Collaborator associatedUser) {
+        AssetHistory historyRecord = new AssetHistory(asset, eventType, details, ticketNumber, associatedUser);
         assetHistoryRepository.save(historyRecord);
     }
 }

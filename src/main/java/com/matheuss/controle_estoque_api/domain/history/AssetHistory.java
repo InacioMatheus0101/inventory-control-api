@@ -34,6 +34,9 @@ public class AssetHistory {
     @Column(nullable = false)
     private String details;
 
+    @Column(name = "ticket_number")
+    private String ticketNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "associated_user_id")
     private Collaborator associatedUser;
@@ -46,6 +49,14 @@ public class AssetHistory {
         this.asset = asset;
         this.eventType = eventType;
         this.details = details;
+        this.associatedUser = associatedUser;
+    }
+
+    public AssetHistory(Asset asset, HistoryEventType eventType, String details, String ticketNumber, Collaborator associatedUser) {
+        this.asset = asset;
+        this.eventType = eventType;
+        this.details = details;
+        this.ticketNumber = ticketNumber;
         this.associatedUser = associatedUser;
     }
 }
