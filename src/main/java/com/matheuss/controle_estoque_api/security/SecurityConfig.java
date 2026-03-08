@@ -5,8 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -14,10 +14,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity 
 public class SecurityConfig {
 
     @Autowired
@@ -36,28 +41,44 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http ) throws Exception {
         http
-            // Desabilita o CSRF, pois não usaremos sessões/cookies (padrão para APIs JWT ).
-            .csrf(csrf -> csrf.disable())
-            
-            // Configura a política de gerenciamento de sessão para ser STATELESS.
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            
-            // Define as regras de autorização para as requisições HTTP.
-            .authorizeHttpRequests(authorize -> authorize
-                // Permite acesso público ao endpoint de login.
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .csrf(csrf -> csrf.disable( ))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 
-                // Permite acesso público à documentação do Swagger.
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // === INÍCIO DA ADIÇÃO DE CORS ===
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // === FIM DA ADIÇÃO DE CORS ===
                 
-                // Exige autenticação para qualquer outra requisição.
-                .anyRequest().authenticated()
-            )
-            
-            // Adiciona nosso filtro customizado para ser executado antes do filtro padrão do Spring.
-            // Isso garante que nosso token seja validado em cada requisição protegida.
-            .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        
+                        // Adicionando as regras de autorização que faltavam
+                        .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                        .requestMatchers("/api/**").hasAnyRole("ADMIN", "TECHNICIAN")
+
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build( );
+    }
+
+    // === BEAN DE CONFIGURAÇÃO DE CORS ADICIONADO ===
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000", 
+                "http://localhost:4200", 
+                "http://localhost:5173"  
+         ));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
     }
 }
