@@ -9,8 +9,8 @@ import com.matheuss.controle_estoque_api.domain.history.HistoryEventType;
 import com.matheuss.controle_estoque_api.dto.ComputerCreateDTO;
 import com.matheuss.controle_estoque_api.dto.ComputerResponseDTO;
 import com.matheuss.controle_estoque_api.dto.ComputerUpdateDTO;
-import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import
-import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException; // Import
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException; 
+import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException; 
 import com.matheuss.controle_estoque_api.mapper.ComputerMapper;
 import com.matheuss.controle_estoque_api.repository.AssetRepository;
 import com.matheuss.controle_estoque_api.repository.ComponentRepository;
