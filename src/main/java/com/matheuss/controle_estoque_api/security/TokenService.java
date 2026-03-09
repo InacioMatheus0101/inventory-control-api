@@ -1,5 +1,6 @@
 package com.matheuss.controle_estoque_api.security;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -17,12 +18,10 @@ public class TokenService {
     @Value("${api.security.token.secret}")
     private String secret;
 
-    // Tempo de expiração ajustado para 20 minutos.
     private final long expirationTime = TimeUnit.MINUTES.toMillis(20);
 
     public String generateToken(UserDetails userDetails) {
-        Key key = Keys.hmacShaKeyFor(secret.getBytes());
-
+        Key key = getSigningKey();
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationTime);
 
@@ -34,20 +33,39 @@ public class TokenService {
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
-  public String validateToken(String token) {
-        try {
-            Key key = Keys.hmacShaKeyFor(secret.getBytes());
 
-            return Jwts.parserBuilder()
-                    .setSigningKey(key) // Define a chave para verificar a assinatura.
-                    .build()
-                    .parseClaimsJws(token) // Faz o parse e valida o token. Lança exceção se for inválido.
-                    .getBody()
-                    .getSubject(); // Retorna o "subject" (username) do token.
-        } catch (Exception e) {
-            // Se o token for inválido (expirado, assinatura errada, etc.), retorna uma string vazia.
-            return "";
-        }
+ 
+    public void validateToken(String token) {
+
+        // O método parseClaimsJws já faz toda a validação.
+        // Se for inválido, ele mesmo lançará a exceção apropriada.
+        // Não precisamos de um try-catch aqui, pois queremos que a exceção
+        // seja propagada para o SecurityFilter.
+
+        Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token);
     }
 
+    
+    public String getSubject(String token) {
+        return getAllClaimsFromToken(token).getSubject();
+    }
+
+    // Método auxiliar privado para extrair todas as informações (claims) do token.
+
+    private Claims getAllClaimsFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    // Método auxiliar privado para gerar a chave de assinatura.
+    
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(secret.getBytes());
+    }
 }

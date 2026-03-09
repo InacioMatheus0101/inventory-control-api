@@ -6,22 +6,19 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.5</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/> 
     </parent>
     <groupId>com.matheuss</groupId>
     <artifactId>controle-estoque-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>controle-estoque-api</name>
-    <description>API para controle de estoque de ativos de TI</description>
-    
+    <description>API para controle de estoque de ativos de TI</description> 
     <properties>
         <java.version>17</java.version>
         <org.projectlombok.version>1.18.32</org.projectlombok.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
     </properties>
-    
     <dependencies>
-        <!-- Spring Boot Starters -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -38,15 +35,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-        
-        <!-- Banco de Dados -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
-        <!-- Ferramentas de Desenvolvimento -->
+        <dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>test</scope>
+</dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -58,33 +56,22 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
-        <!-- Documentação da API (Swagger/OpenAPI ) -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.3.0</version>
         </dependency>
-
-        <!-- MapStruct (Principal) -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${org.mapstruct.version}</version>
         </dependency>
-
-        <!-- =============================================================== -->
-        <!-- == NOVA DEPENDÊNCIA ADICIONADA PARA CORRIGIR O PROBLEMA == -->
-        <!-- Esta dependência ajuda o MapStruct a trabalhar com o Lombok. -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok-mapstruct-binding</artifactId>
             <version>0.2.0</version>
             <scope>provided</scope>
         </dependency>
-        <!-- =============================================================== -->
-
-        <!-- Testes -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -95,8 +82,7 @@
     <artifactId>spring-security-test</artifactId>
     <scope>test</scope>
 </dependency>
-
-        <dependency>
+       <dependency>
     <groupId>org.springframework.data</groupId>
     <artifactId>spring-data-envers</artifactId>
 </dependency>
@@ -118,7 +104,6 @@
     <scope>runtime</scope>
 </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -133,30 +118,24 @@
                     </excludes>
                 </configuration>
             </plugin>
-            
-            <!-- ==================================================================================== -->
-            <!-- == PLUGIN DO COMPILADOR CORRIGIDO PARA FORÇAR A ORDEM LOMBOK -> MAPSTRUCT == -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version> <!-- Mantive sua versão -->
+                <version>3.8.1</version> 
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <annotationProcessorPaths>
-                        <!-- 1. LOMBOK DEVE VIR PRIMEIRO -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${org.projectlombok.version}</version>
                         </path>
-                        <!-- 2. MAPSTRUCT DEVE VIR DEPOIS -->
                         <path>
                             <groupId>org.mapstruct</groupId>
                             <artifactId>mapstruct-processor</artifactId>
                             <version>${org.mapstruct.version}</version>
                         </path>
-                        <!-- 3. ADIÇÃO CRÍTICA: O BINDING DEVE ESTAR AQUI TAMBÉM -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok-mapstruct-binding</artifactId>
@@ -169,7 +148,6 @@
         </compilerArgs>
                 </configuration>
             </plugin>
-            <!-- ==================================================================================== -->
         </plugins>
     </build>
 
