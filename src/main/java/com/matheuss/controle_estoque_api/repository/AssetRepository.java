@@ -1,6 +1,8 @@
 package com.matheuss.controle_estoque_api.repository;
 
 import com.matheuss.controle_estoque_api.domain.Asset;
+import com.matheuss.controle_estoque_api.domain.enums.AssetStatus;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,5 +26,10 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Asset a WHERE a.serialNumber IN :serialNumbers")
     boolean existsBySerialNumberIn(@Param("serialNumbers") List<String> serialNumbers);
+
+    @Query("SELECT a.status, COUNT(a) FROM Asset a GROUP BY a.status")
+    List<Object[]> countByStatus();
+
+      long countByStatus(AssetStatus status);
 
 }
