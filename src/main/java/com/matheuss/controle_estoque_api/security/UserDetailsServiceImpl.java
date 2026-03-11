@@ -14,14 +14,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        // Como a nossa entidade 'User' agora é um 'UserDetails',
+        // podemos simplesmente buscá-la no repositório e retorná-la diretamente.
+        // O Spring Security saberá como usar o objeto retornado.
+        return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o nome: " + username));
-
-        // Constrói e retorna um objeto UserDetails padrão do Spring Security.
-        return new org.springframework.security.core.userdetails.User(
-            user.getUsername(),
-            user.getPassword(),
-            user.getRoles()
-        );
     }
 }
