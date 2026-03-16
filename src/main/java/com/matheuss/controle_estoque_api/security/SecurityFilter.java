@@ -1,6 +1,6 @@
 package com.matheuss.controle_estoque_api.security;
 
-import com.matheuss.controle_estoque_api.security.UserRepository; 
+import com.matheuss.controle_estoque_api.security.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,22 +34,19 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         if (token != null) {
             try {
-                // 1. Valida o token. Se for inválido, lança uma exceção.
-                tokenService.validateToken(token);
+                // Valida o token de acesso para autorizar a requisição.
+                tokenService.validateAccessToken(token);
 
-                // 2. Se a validação passou, extrai o username.
                 var username = tokenService.getSubject(token);
-
-                // 3. Busca o usuário no banco de dados.
                 UserDetails user = userRepository.findByUsername(username).orElse(null);
 
-                // 4. Se o usuário existir, autentica-o para esta requisição.
                 if (user != null) {
                     var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception e) {
-                // Se a validação do token falhar, o contexto de segurança é limpo.
+                // Em caso de falha na validação do token, limpa o contexto de segurança.
+                // A requisição prosseguirá sem autenticação e será barrada se o endpoint for protegido.
                 SecurityContextHolder.clearContext();
             }
         }
