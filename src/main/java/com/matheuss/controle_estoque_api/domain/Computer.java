@@ -17,13 +17,15 @@ import java.util.Objects;
 @Setter
 @ToString(callSuper = true, exclude = {"components"}) // Herda o toString() de Asset e exclui a lista de componentes
 public class Computer extends Asset {
+    
 
-    private String name;
+    private String hostname;
     private String serialNumber;
     private String cpu;
     private int ramSizeInGB;
     private int storageSizeInGB;
     private String os;
+    private String nameComputer;
 
     // A RELAÇÃO COM CATEGORY FOI REMOVIDA DAQUI.
     // ELA AGORA EXISTE APENAS NA CLASSE MÃE 'Asset'.

@@ -22,23 +22,40 @@ public interface CollaboratorMapper {
     void updateEntityFromDto(CollaboratorUpdateDTO dto, @MappingTarget Collaborator entity);
 
     // ===== Assets dentro de UserResponseDTO =====
+    // Este método agora usa a lógica corrigida de 'resolveAssetName'
     @Mapping(target = "name", expression = "java(resolveAssetName(asset))")
     AssetSimpleResponseDTO toAssetSimpleResponseDTO(Asset asset);
 
     List<AssetSimpleResponseDTO> toAssetSimpleResponseDTOList(List<Asset> assets);
 
+    /**
+     * Resolve o nome de exibição de um ativo (Asset) de forma polimórfica.
+     * Esta é a correção principal: agora ele busca 'hostname' para a entidade Computer.
+     *
+     * @param asset O ativo a ser resolvido.
+     * @return O nome de exibição apropriado (hostname, name, etc.).
+     */
     default String resolveAssetName(Asset asset) {
-        if (asset == null) return null;
+        if (asset == null) {
+            return null;
+        }
 
-        if (asset instanceof Computer) {
-            return ((Computer) asset).getName();
+        // Usando pattern matching do Java 17+ para um código mais limpo e seguro
+        if (asset instanceof Computer computer) {
+            // CORREÇÃO APLICADA: Usa getHostname() para a entidade Computer.
+            return computer.getHostname();
         }
-        if (asset instanceof Peripheral) {
-            return ((Peripheral) asset).getName();
+        if (asset instanceof Peripheral peripheral) {
+            // Para Periféricos, continuamos usando getName().
+            // Futuramente, podemos refatorar para um nome mais específico se necessário.
+            return peripheral.getName();
         }
-        if (asset instanceof Component) {
-            return ((Component) asset).getName();
+        if (asset instanceof Component component) {
+            // Para Componentes, também continuamos usando getName().
+            return component.getName();
         }
-        return null;
+
+        // Retorna um valor padrão caso o tipo de ativo não seja reconhecido.
+        return "Ativo Desconhecido";
     }
 }

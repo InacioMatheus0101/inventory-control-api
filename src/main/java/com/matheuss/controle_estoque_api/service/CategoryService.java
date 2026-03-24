@@ -5,13 +5,15 @@ import com.matheuss.controle_estoque_api.dto.CategoryCreateDTO;
 import com.matheuss.controle_estoque_api.dto.CategoryResponseDTO;
 import com.matheuss.controle_estoque_api.dto.CategoryUpdateDTO;
 import com.matheuss.controle_estoque_api.exception.BusinessRuleException;
-import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException; // Import para a nova exceção
+import com.matheuss.controle_estoque_api.exception.ResourceAlreadyExistsException;
 import com.matheuss.controle_estoque_api.mapper.CategoryMapper;
 import com.matheuss.controle_estoque_api.repository.CategoryRepository;
 import com.matheuss.controle_estoque_api.repository.ComponentRepository;
 import com.matheuss.controle_estoque_api.repository.ComputerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +31,6 @@ public class CategoryService {
 
     @Transactional
     public CategoryResponseDTO createCategory(CategoryCreateDTO dto) {
-        // [MELHORIA] Impede a criação de categorias com nomes duplicados.
         categoryRepository.findByName(dto.getName()).ifPresent(category -> {
             throw new ResourceAlreadyExistsException("Uma categoria com o nome '" + dto.getName() + "' já existe.");
         });
@@ -37,6 +38,12 @@ public class CategoryService {
         Category newCategory = categoryMapper.toEntity(dto);
         Category saved = categoryRepository.save(newCategory);
         return categoryMapper.toResponseDTO(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CategoryResponseDTO> findAllCategories(Pageable pageable) {
+        return categoryRepository.findAll(pageable)
+                .map(categoryMapper::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
@@ -58,7 +65,6 @@ public class CategoryService {
         Category existing = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID: " + id));
 
-        // [MELHORIA] Verifica se o novo nome já está em uso por outra categoria.
         categoryRepository.findByName(dto.getName()).ifPresent(category -> {
             if (!category.getId().equals(id)) {
                 throw new ResourceAlreadyExistsException("Uma categoria com o nome '" + dto.getName() + "' já existe.");
@@ -75,12 +81,11 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID: " + id));
 
-        // A lógica de verificação está correta e foi mantida.
         boolean isInUse = computerRepository.existsByCategoryId(id) || componentRepository.existsByCategoryId(id);
         if (isInUse) {
             throw new BusinessRuleException("Não é possível deletar a categoria '" + category.getName() + "' pois ela está associada a um ou mais ativos.");
         }
 
-        categoryRepository.delete(category); // Use delete(entity) para melhor performance com o cache do Hibernate
+        categoryRepository.delete(category);
     }
 }

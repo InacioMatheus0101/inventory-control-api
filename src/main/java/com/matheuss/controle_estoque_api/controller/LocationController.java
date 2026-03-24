@@ -6,13 +6,15 @@ import com.matheuss.controle_estoque_api.dto.LocationUpdateDTO;
 import com.matheuss.controle_estoque_api.service.LocationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize; // Import necessário
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/locations" )
@@ -32,8 +34,9 @@ public class LocationController {
 
     @GetMapping
     @PreAuthorize("hasRole('TECHNICIAN')")
-    public ResponseEntity<List<LocationResponseDTO>> getAllLocations() {
-        return ResponseEntity.ok(locationService.findAllLocations());
+    public ResponseEntity<Page<LocationResponseDTO>> getAllLocations(
+            @PageableDefault(size = 10, page = 0) Pageable pageable) {
+        return ResponseEntity.ok(locationService.findAllLocations(pageable));
     }
 
     @GetMapping("/{id}")

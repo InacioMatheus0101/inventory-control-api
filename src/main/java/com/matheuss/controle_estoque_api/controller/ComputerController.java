@@ -42,12 +42,12 @@ public class ComputerController {
     @Operation(summary = "Lista computadores com paginação, ordenação e filtros")
     public ResponseEntity<Page<ComputerResponseDTO>> getAllComputers(
             @RequestParam(required = false) AssetStatus status,
-            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String nameComputer,
             @RequestParam(required = false) String patrimonio,
             @RequestParam(required = false) String serialNumber,
             Pageable pageable) {
 
-        Page<ComputerResponseDTO> computersPage = computerService.getAllComputers(status, name, patrimonio, serialNumber, pageable);
+        Page<ComputerResponseDTO> computersPage = computerService.getAllComputers(status, nameComputer, patrimonio, serialNumber, pageable);
         return ResponseEntity.ok(computersPage);
     }
 

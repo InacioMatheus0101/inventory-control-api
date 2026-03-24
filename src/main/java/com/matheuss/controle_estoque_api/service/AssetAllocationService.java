@@ -92,7 +92,7 @@ public class AssetAllocationService {
                     component.setComputer(null);
                     component.setStatus(AssetStatus.EM_ESTOQUE);
                     assetHistoryService.registerEvent(component, HistoryEventType.DEVOLUCAO,
-                        "Componente retornado ao estoque após descarte do computador: " + computer.getName(), null);
+                        "Componente retornado ao estoque após descarte do computador: " + computer.getHostname(), null);
                 }
             }
         }

@@ -9,21 +9,25 @@ import java.time.LocalDate;
 @Data
 public class ComputerUpdateDTO {
 
+
+    private String hostname;
+    private String nameComputer;
     private String assetTag;
-     private String patrimonio;
-    private AssetStatus status;
+    private String patrimonio;
+    private AssetStatus status; 
     private LocalDate purchaseDate;
     private Long categoryId;
     private Long locationId;
     private Long collaboratorId;
 
-    private String name;
+    // Campos específicos do Computador
     private String serialNumber;
     private String cpu;
-    private Integer ramSizeInGB;
-    private Integer storageSizeInGB;
+    private Integer ramSizeInGB; 
+    private Integer storageSizeInGB; 
     private String os;
 
+  
     private EquipmentState equipmentState;
     private String notes;
 

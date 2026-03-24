@@ -40,8 +40,11 @@ public class BulkCreateRequestDTO {
         @NotNull(message = "O número de série é obrigatório.")
         private String serialNumber;
 
-        @NotNull(message = "O modelo é obrigatório.")
-        private String model; // Usaremos para preencher 'name' ou 'model'
+        @NotNull(message = "O hostname é obrigatório.")
+        private String hostname; 
+
+        private String model;
+
 
         // OPCIONAL
         private String assetTag;

@@ -44,7 +44,7 @@ public class ComputerServiceTest {
         // Configuração do Computador
         computer = new Computer();
         computer.setId(1L);
-        computer.setName("DELL-G15");
+       
 
         // Configuração da Categoria dos Componentes
         componentCategory = new Category("Memória RAM");

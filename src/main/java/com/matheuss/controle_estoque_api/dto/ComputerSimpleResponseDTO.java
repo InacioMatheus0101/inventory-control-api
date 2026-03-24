@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class ComputerSimpleResponseDTO {
     private Long id;
-    private String name;
+    private String nameComputer;
     private String assetTag;
 }

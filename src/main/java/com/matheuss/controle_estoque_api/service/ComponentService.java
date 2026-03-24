@@ -168,8 +168,8 @@ public class ComponentService {
         Component updatedComponent = componentRepository.save(component);
 
         String details = String.format("Componente '%s' (Patrimônio: %s) instalado no computador '%s'.",
-                updatedComponent.getName(), updatedComponent.getPatrimonio(), computer.getName());
-        assetHistoryService.registerEvent(updatedComponent, HistoryEventType.INSTALACAO, details, null);
+            updatedComponent.getName(), updatedComponent.getPatrimonio(), computer.getHostname());
+    assetHistoryService.registerEvent(updatedComponent, HistoryEventType.INSTALACAO, details, null);
 
         return componentMapper.toResponseDTO(updatedComponent);
     }

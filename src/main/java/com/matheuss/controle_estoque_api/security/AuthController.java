@@ -13,8 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
 @RestController
-@RequestMapping("/api/auth" )
+@RequestMapping("/api/auth")
 public class AuthController {
 
     @Autowired
@@ -26,26 +27,43 @@ public class AuthController {
     @Autowired
     private UserDetailsService userDetailsService;
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO data) {
-        var usernamePassword = new UsernamePasswordAuthenticationToken(data.getUsername(), data.getPassword());
+  
+    @PostMapping
+    public ResponseEntity<LoginResponseDTO> login(
+        @RequestBody @Valid LoginRequestDTO data
+    ) {
+        // Criar token de autenticação com username e password
+        var usernamePassword = new UsernamePasswordAuthenticationToken(
+            data.getUsername(),
+            data.getPassword()
+        );
+
+        // Autenticar usando o AuthenticationManager
         Authentication auth = authenticationManager.authenticate(usernamePassword);
 
+        // Obter detalhes do utilizador autenticado
         var userDetails = (User) auth.getPrincipal();
-        
-        // MODIFICADO: Agora usamos o método que retorna o par de tokens.
+
+        // Gerar par de tokens (access token + refresh token)
         LoginResponseDTO tokenPair = tokenService.generateTokenPair(userDetails);
 
         return ResponseEntity.ok(tokenPair);
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDTO> refreshToken(@RequestBody @Valid RefreshTokenRequestDTO data) {
+    public ResponseEntity<LoginResponseDTO> refreshToken(
+        @RequestBody @Valid RefreshTokenRequestDTO data
+    ) {
+        // Validar o refresh token
         tokenService.validateRefreshToken(data.refreshToken());
+
+        // Extrair username do refresh token
         String username = tokenService.getSubject(data.refreshToken());
+
+        // Carregar detalhes do utilizador
         var userDetails = this.userDetailsService.loadUserByUsername(username);
-        
-        // MODIFICADO: Geramos e retornamos o novo par de tokens.
+
+        // Gerar novo par de tokens
         LoginResponseDTO newTokenPair = tokenService.generateTokenPair(userDetails);
 
         return ResponseEntity.ok(newTokenPair);

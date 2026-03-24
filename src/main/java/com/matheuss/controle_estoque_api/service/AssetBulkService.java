@@ -86,14 +86,14 @@ public class AssetBulkService {
         switch (dto.getAssetType()) {
             case COMPUTER: {
                 Computer newComputer = new Computer();
-                newComputer.setName(individualData.getModel());
+                newComputer.setHostname(individualData.getHostname());
                 newComputer.setSerialNumber(individualData.getSerialNumber());
                 newAsset = newComputer;
                 break;
             }
             case COMPONENT: {
                 Component newComponent = new Component();
-                newComponent.setName(individualData.getModel());
+                newComponent.setName(individualData.getHostname());
                 newComponent.setModel(individualData.getModel());
                 newComponent.setSerialNumber(individualData.getSerialNumber());
                 newAsset = newComponent;

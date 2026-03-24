@@ -28,22 +28,31 @@ public interface ComputerMapper {
     @Mapping(target = "components", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+     @Mapping(target = "nameComputer", ignore = true)
     Computer toEntity(ComputerCreateDTO dto);
 
     ComputerResponseDTO toResponseDTO(Computer entity);
 
     List<ComputerResponseDTO> toResponseDTOList(List<Computer> entities);
 
+    /**
+     * Atualiza uma entidade Computer a partir de um DTO, ignorando campos nulos no DTO.
+     * Isso permite atualizações parciais: apenas os campos fornecidos no DTO serão alterados na entidade.
+     * Campos complexos como relacionamentos e status são ignorados e devem ser tratados no Service.
+     *
+     * @param dto    O objeto de transferência de dados com os novos valores.
+     * @param entity A entidade a ser atualizada, que será modificada diretamente.
+     */
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "id", ignore = true) // Boa prática adicionar o id também
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "location", ignore = true)
     @Mapping(target = "collaborator", ignore = true)
-    
-    @Mapping(target = "status", ignore = true) // Impede que o Mapper sobrescreva a lógica de status do Service.
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "history", ignore = true)
     @Mapping(target = "components", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+     @Mapping(target = "nameComputer", ignore = true)
     void updateEntityFromDto(ComputerUpdateDTO dto, @MappingTarget Computer entity);
 }

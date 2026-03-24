@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "collaborators") // Usamos 'users' porque 'user' é uma palavra reservada em muitos bancos de dados
+@Table(name = "collaborators") 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

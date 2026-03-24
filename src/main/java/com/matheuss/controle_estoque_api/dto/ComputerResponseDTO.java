@@ -18,6 +18,12 @@ public class ComputerResponseDTO {
     private LocalDate purchaseDate;
     private String notes;
 
+    // --- MODIFICAÇÃO CRÍTICA AQUI ---
+    // Adicionando os campos que estavam faltando para a tabela do frontend.
+    private String patrimonio;
+    private String hostname;
+    // ---------------------------------
+
     // CAMPOS ADMINISTRATIVOS (EXCEL)
     private LocalDate dataRecebimento;
     private String chamadoCompra;
@@ -36,7 +42,7 @@ public class ComputerResponseDTO {
     private List<ComponentResponseDTO> components;
 
     // CAMPOS ESPECÍFICOS
-    private String name;
+    private String nameComputer;
     private String serialNumber;
     private String cpu;
     private int ramSizeInGB;

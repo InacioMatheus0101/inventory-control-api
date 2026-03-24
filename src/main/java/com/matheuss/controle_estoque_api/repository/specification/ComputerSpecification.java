@@ -10,19 +10,21 @@ public class ComputerSpecification {
     public static Specification<Computer> hasStatus(AssetStatus status) {
         return (root, query, criteriaBuilder) -> {
             if (status == null) {
+                // Se o status for nulo, não aplica filtro de status.
                 return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.equal(root.get("status"), status);
         };
     }
 
-    // Filtro por nome (busca parcial, "contém", ignorando maiúsculas/minúsculas).
-    public static Specification<Computer> nameContains(String name) {
+    // A lógica agora busca no campo 'hostname' da entidade.
+    public static Specification<Computer> hostnameContains(String hostname) {
         return (root, query, criteriaBuilder) -> {
-            if (name == null || name.isBlank()) {
+            if (hostname == null || hostname.isBlank()) {
                 return criteriaBuilder.conjunction();
             }
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+            // A busca é feita no campo 'hostname', ignorando maiúsculas/minúsculas.
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get("hostname")), "%" + hostname.toLowerCase() + "%");
         };
     }
 

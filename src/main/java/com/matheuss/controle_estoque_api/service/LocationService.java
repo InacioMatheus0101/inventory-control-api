@@ -4,11 +4,13 @@ import com.matheuss.controle_estoque_api.domain.Location;
 import com.matheuss.controle_estoque_api.dto.LocationCreateDTO;
 import com.matheuss.controle_estoque_api.dto.LocationResponseDTO;
 import com.matheuss.controle_estoque_api.dto.LocationUpdateDTO;
-import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import da nova exceção
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException;
 import com.matheuss.controle_estoque_api.mapper.LocationMapper;
 import com.matheuss.controle_estoque_api.repository.LocationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,12 @@ public class LocationService {
         Location entity = locationMapper.toEntity(dto);
         Location saved = locationRepository.save(entity);
         return locationMapper.toResponseDTO(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<LocationResponseDTO> findAllLocations(Pageable pageable) {
+        return locationRepository.findAll(pageable)
+                .map(locationMapper::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
@@ -58,9 +66,7 @@ public class LocationService {
         Location location = locationRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Localização não encontrada com o ID: " + id));
 
-        // VERIFICAÇÃO DE SEGURANÇA
         if (location.getAssets() != null && !location.getAssets().isEmpty()) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException(
                 "Operação não permitida: A localização PA " + location.getPaNumber() + 
                 " não pode ser deletada pois possui " + location.getAssets().size() + " ativo(s) associado(s)."

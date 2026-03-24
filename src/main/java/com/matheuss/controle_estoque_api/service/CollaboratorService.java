@@ -4,11 +4,13 @@ import com.matheuss.controle_estoque_api.domain.Collaborator;
 import com.matheuss.controle_estoque_api.dto.CollaboratorCreateDTO;
 import com.matheuss.controle_estoque_api.dto.CollaboratorResponseDTO;
 import com.matheuss.controle_estoque_api.dto.CollaboratorUpdateDTO;
-import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import da nova exceção
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException;
 import com.matheuss.controle_estoque_api.mapper.CollaboratorMapper;
 import com.matheuss.controle_estoque_api.repository.CollaboratorRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,12 @@ public class CollaboratorService {
         Collaborator entity = collaboratorMapper.toEntity(dto);
         Collaborator saved = collaboratorRepository.save(entity);
         return collaboratorMapper.toResponseDTO(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CollaboratorResponseDTO> getAll(Pageable pageable) {
+        return collaboratorRepository.findAll(pageable)
+                .map(collaboratorMapper::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
@@ -58,9 +66,7 @@ public class CollaboratorService {
         Collaborator collaborator = collaboratorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Colaborador não encontrado com o ID: " + id));
 
-        // VERIFICAÇÃO DE SEGURANÇA: O colaborador possui ativos?
         if (collaborator.getAssets() != null && !collaborator.getAssets().isEmpty()) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException("Não é possível deletar o colaborador '" + collaborator.getName() + "' pois ele possui " + collaborator.getAssets().size() + " ativo(s) alocado(s).");
         }
 

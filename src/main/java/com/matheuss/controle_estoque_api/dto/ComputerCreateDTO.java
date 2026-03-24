@@ -28,6 +28,9 @@ public class ComputerCreateDTO {
      @NotBlank(message = "O número de patrimônio é obrigatório para computadores.")
     private String patrimonio;
 
+     @NotBlank(message = "O hostname do computador é obrigatório.")
+    private String hostname;
+
     private String notes;
 
     // CAMPOS ADMINISTRATIVOS (EXCEL)
@@ -43,8 +46,8 @@ public class ComputerCreateDTO {
     private String ticketDevolucaoJira;
 
     // CAMPOS ESPECÍFICOS
-    @NotBlank(message = "O nome do computador é obrigatório.")
-    private String name;
+    
+    private String nameComputer;
 
     @NotBlank(message = "O número de série é obrigatório.")
     private String serialNumber;

@@ -4,7 +4,6 @@ import com.matheuss.controle_estoque_api.exception.CustomAuthenticationEntryPoin
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -23,7 +22,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Habilita o uso de @PreAuthorize nos controllers
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Autowired
@@ -38,13 +37,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable( ))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // CONFIGURAÇÃO DE AUTORIZAÇÃO SIMPLIFICADA
                 .authorizeHttpRequests(authorize -> authorize
-                        // Apenas endpoints públicos são definidos aqui
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        // MODIFICADO: Libera todos os endpoints sob /api/auth/
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // Qualquer outra requisição precisa estar autenticada.
-                        // As regras de perfil (role) agora estão nos controllers.
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(handling -> handling
