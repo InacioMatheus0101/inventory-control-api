@@ -17,12 +17,9 @@ public class ComputerResponseDTO {
     private EquipmentState equipmentState;
     private LocalDate purchaseDate;
     private String notes;
-
-    // --- MODIFICAÇÃO CRÍTICA AQUI ---
-    // Adicionando os campos que estavam faltando para a tabela do frontend.
     private String patrimonio;
     private String hostname;
-    // ---------------------------------
+    private Long collaboratorId;
 
     // CAMPOS ADMINISTRATIVOS (EXCEL)
     private LocalDate dataRecebimento;

@@ -8,29 +8,22 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @DiscriminatorValue("PERIPHERAL")
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString(callSuper = true)
 public class Peripheral extends Asset {
 
-    // Campos específicos de um periférico
-    
-    // O campo 'type' foi movido para cá, pois é específico de Periférico.
-    // A anotação @Column(nullable = true) foi a correção crucial que fizemos.
-    @Column(nullable = true) 
-    private String type; // Ex: "Mouse", "Teclado", "Headset", "Monitor"
+    private String type;
+    private String name;
+    private String model;
+    private String serialNumber;
 
-    private String name; // Ex: "Mouse Gamer Logitech G502", "Teclado Mecânico HyperX"
-    private String model; // Ex: "G502 Hero", "Alloy FPS Pro"
-    private String serialNumber; // Número de série único do dispositivo
-
-    // ====================================================================
-    // == RELACIONAMENTO OPCIONAL COM COMPUTADOR ==
-    // Um periférico pode ou não estar conectado a um computador.
-    // A ausência de 'nullable = false' na @JoinColumn torna a coluna anulável por padrão.
-    // ====================================================================
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "computer_id")
     private Computer computer;

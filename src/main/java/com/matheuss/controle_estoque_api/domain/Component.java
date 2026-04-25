@@ -22,20 +22,11 @@ public class Component extends Asset {
     private String model;
     private String serialNumber;
 
-    // Relacionamento com Categoria para definir o tipo (RAM, SSD, etc.)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private Category category;
-
-    // ====================================================================
-    // == RELACIONAMENTO OPCIONAL COM COMPUTADOR ==
-    // Um componente pode estar em estoque (não instalado) ou instalado em um computador.
-    // A ausência de 'nullable = false' na @JoinColumn torna a coluna anulável por padrão.
-    // ====================================================================
-    @ManyToOne(fetch = FetchType.LAZY)
+   
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "computer_id")
     private Computer computer;
     
-   @Column(name = "component_type") 
+    @Column(name = "component_type") 
     private String type;
 }

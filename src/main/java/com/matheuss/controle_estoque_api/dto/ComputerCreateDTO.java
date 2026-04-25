@@ -55,10 +55,10 @@ public class ComputerCreateDTO {
     private String cpu;
 
     @Positive(message = "A quantidade de RAM deve ser um número positivo.")
-    private int ramSizeInGB;
+    private Integer ramSizeInGB;
 
     @Positive(message = "O tamanho do armazenamento deve ser um número positivo.")
-    private int storageSizeInGB;
+    private Integer storageSizeInGB;
 
     private String os;
 

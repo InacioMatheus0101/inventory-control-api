@@ -1,5 +1,6 @@
 package com.matheuss.controle_estoque_api.controller;
 
+import com.matheuss.controle_estoque_api.dto.AssetSimpleResponseDTO;
 import com.matheuss.controle_estoque_api.service.AssetAllocationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,41 +14,41 @@ public class AssetAllocationController {
 
     private final AssetAllocationService assetAllocationService;
 
-    // Alocar para colaborador (Home office / empréstimo)
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO em vez de Void
     @PatchMapping("/{assetId}/assign/{collaboratorId}")
     @PreAuthorize("hasRole('TECHNICIAN')")
-    public ResponseEntity<Void> assignToCollaborator(
+    public ResponseEntity<AssetSimpleResponseDTO> assignToCollaborator(
             @PathVariable Long assetId,
             @PathVariable Long collaboratorId
     ) {
-        assetAllocationService.assignToCollaborator(assetId, collaboratorId);
-        return ResponseEntity.ok().build();
+        AssetSimpleResponseDTO result = assetAllocationService.assignToCollaborator(assetId, collaboratorId);
+        return ResponseEntity.ok(result);
     }
 
-    // Alocar para localização (PA)
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO em vez de Void
     @PatchMapping("/{assetId}/assign-location/{locationId}")
     @PreAuthorize("hasRole('TECHNICIAN')")
-    public ResponseEntity<Void> assignToLocation(
+    public ResponseEntity<AssetSimpleResponseDTO> assignToLocation(
             @PathVariable Long assetId,
             @PathVariable Long locationId
     ) {
-        assetAllocationService.assignToLocation(assetId, locationId);
-        return ResponseEntity.ok().build();
+        AssetSimpleResponseDTO result = assetAllocationService.assignToLocation(assetId, locationId);
+        return ResponseEntity.ok(result);
     }
 
-    // Devolver para estoque
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO em vez de Void
     @PatchMapping("/{assetId}/unassign")
     @PreAuthorize("hasRole('TECHNICIAN')")
-    public ResponseEntity<Void> unassignToStock(@PathVariable Long assetId) {
-        assetAllocationService.unassignToStock(assetId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<AssetSimpleResponseDTO> unassignToStock(@PathVariable Long assetId) {
+        AssetSimpleResponseDTO result = assetAllocationService.unassignToStock(assetId);
+        return ResponseEntity.ok(result);
     }
 
-    // Novo endpoint para descarte (soft delete)
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO em vez de Void
     @PatchMapping("/{assetId}/dispose")
     @PreAuthorize("hasRole('TECHNICIAN')")
-    public ResponseEntity<Void> disposeAsset(@PathVariable Long assetId) {
-        assetAllocationService.disposeAsset(assetId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<AssetSimpleResponseDTO> disposeAsset(@PathVariable Long assetId) {
+        AssetSimpleResponseDTO result = assetAllocationService.disposeAsset(assetId);
+        return ResponseEntity.ok(result);
     }
 }

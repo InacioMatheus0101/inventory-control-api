@@ -65,7 +65,7 @@ public class CategoryControllerTest {
         computerDTO.setStatus(AssetStatus.EM_USO);
         computerDTO.setEquipmentState(EquipmentState.USADO);
         computerDTO.setPurchaseDate(LocalDate.now());
-        computerDTO.setName("Notebook de Teste em Uso");
+        computerDTO.setNameComputer("Notebook de Teste em Uso");
         computerDTO.setSerialNumber("SN-IN-USE");
         computerDTO.setCpu("i7");
         computerDTO.setRamSizeInGB(8);

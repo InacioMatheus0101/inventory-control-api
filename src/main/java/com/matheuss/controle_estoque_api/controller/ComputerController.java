@@ -9,6 +9,8 @@ import com.matheuss.controle_estoque_api.service.ComputerService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,12 +22,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/api/computers" )
+@RequestMapping("/api/computers")
 @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
+@RequiredArgsConstructor
 public class ComputerController {
 
-    @Autowired
-    private ComputerService computerService;
+    private final ComputerService computerService;
 
     @PostMapping
     public ResponseEntity<ComputerResponseDTO> createComputer(@RequestBody @Valid ComputerCreateDTO computerDTO) {
@@ -42,12 +44,12 @@ public class ComputerController {
     @Operation(summary = "Lista computadores com paginação, ordenação e filtros")
     public ResponseEntity<Page<ComputerResponseDTO>> getAllComputers(
             @RequestParam(required = false) AssetStatus status,
-            @RequestParam(required = false) String nameComputer,
+            @RequestParam(required = false) String hostname,
             @RequestParam(required = false) String patrimonio,
             @RequestParam(required = false) String serialNumber,
             Pageable pageable) {
 
-        Page<ComputerResponseDTO> computersPage = computerService.getAllComputers(status, nameComputer, patrimonio, serialNumber, pageable);
+        Page<ComputerResponseDTO> computersPage = computerService.getAllComputers(status, hostname, patrimonio, serialNumber, pageable);
         return ResponseEntity.ok(computersPage);
     }
 

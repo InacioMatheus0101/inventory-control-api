@@ -1,5 +1,8 @@
 package com.matheuss.controle_estoque_api.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import com.matheuss.controle_estoque_api.domain.Collaborator;
 import com.matheuss.controle_estoque_api.domain.Component;
 import com.matheuss.controle_estoque_api.domain.Computer;
@@ -24,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.matheuss.controle_estoque_api.service.validator.AssetValidator;
 
 import java.util.Objects;
 
@@ -37,151 +41,133 @@ public class ComputerService {
     private final ComputerMapper computerMapper;
     private final AssetHistoryService assetHistoryService;
     private final EntityResolver resolver;
+    private final AssetValidator assetValidator;
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CRUD
+    // ══════════════════════════════════════════════════════════════════════
 
     @Transactional
     public ComputerResponseDTO createComputer(ComputerCreateDTO dto) {
         if (assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-            throw new ResourceAlreadyExistsException("Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
+            throw new ResourceAlreadyExistsException(
+                "Já existe um ativo com o número de patrimônio: " + dto.getPatrimonio());
         }
-        if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && assetRepository.existsByAssetTag(dto.getAssetTag())) {
-            throw new ResourceAlreadyExistsException("Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
+        if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank()
+                && assetRepository.existsByAssetTag(dto.getAssetTag())) {
+            throw new ResourceAlreadyExistsException(
+                "Já existe um ativo com o Asset Tag: " + dto.getAssetTag());
         }
-        
+
         Computer entity = computerMapper.toEntity(dto);
         entity.setCategory(resolver.requireCategory(dto.getCategoryId()));
         entity.setLocation(resolver.optionalLocation(dto.getLocationId()));
         entity.setStatus(AssetStatus.EM_ESTOQUE);
         entity.setCollaborator(null);
+
+        assetValidator.validateState(entity.getEquipmentState(), entity.getStatus());
+        assetValidator.validateAllocationConsistency(
+                entity.getStatus(), entity.getLocation(), null, null);
+
         Computer saved = computerRepository.save(entity);
-        assetHistoryService.registerEvent(saved, HistoryEventType.CRIACAO, "Ativo cadastrado no sistema.", null);
+        assetHistoryService.registerEvent(saved, HistoryEventType.CRIACAO,
+                "Ativo cadastrado no sistema.", null);
+
         return computerMapper.toResponseDTO(saved);
     }
 
     @Transactional(readOnly = true)
     public Page<ComputerResponseDTO> getAllComputers(
-            AssetStatus status, String hostname, String patrimonio, String serialNumber, Pageable pageable) {
-        
-        // CORREÇÃO: Parâmetro 'name' renomeado para 'hostname' e especificação correspondente utilizada.
-        Specification<Computer> spec = Specification.where(ComputerSpecification.hasStatus(status))
-                .and(ComputerSpecification.hostnameContains(hostname)) // Assumindo que ComputerSpecification.java foi corrigido.
+            AssetStatus status, String hostname, String patrimonio,
+            String serialNumber, Pageable pageable) {
+
+        Specification<Computer> spec = Specification
+                .where(ComputerSpecification.hasStatus(status))
+                .and(ComputerSpecification.hostnameContains(hostname))
                 .and(ComputerSpecification.patrimonioContains(patrimonio))
                 .and(ComputerSpecification.serialNumberContains(serialNumber));
 
-        Page<Computer> computerPage = computerRepository.findAll(spec, pageable);
-        
-        return computerPage.map(computerMapper::toResponseDTO);
+        return computerRepository.findAll(spec, pageable)
+                .map(computerMapper::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
     public ComputerResponseDTO getComputerById(Long id) {
         Computer entity = computerRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new EntityNotFoundException("Computador não encontrado com o ID: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(
+                    "Computador não encontrado com o ID: " + id));
         return computerMapper.toResponseDTO(entity);
     }
 
     @Transactional
     public ComputerResponseDTO updateComputer(Long id, ComputerUpdateDTO dto) {
         Computer computer = resolver.requireComputer(id);
-        
-        // Validações de unicidade para patrimônio e assetTag
-        validateUniquenessOnUpdate(dto, computer);
 
-        // Mapeia os dados simples (hostname, cpu, ram, etc.) usando o mapper
+        validateUniquenessOnUpdate(dto, computer);
         computerMapper.updateEntityFromDto(dto, computer);
 
-        // Trata relacionamentos e lógica de negócio complexa
         if (dto.getCategoryId() != null) {
             computer.setCategory(resolver.requireCategory(dto.getCategoryId()));
         }
 
-        // Lógica de Alocação foi extraída para um método privado para clareza
-        handleAllocationLogic(dto, computer);
+        List<Runnable> historyEvents = applyAllocationChanges(dto, computer);
 
-        Computer updatedComputer = computerRepository.save(computer);
-        
-        assetHistoryService.registerEvent(updatedComputer, HistoryEventType.ATUALIZACAO, "Dados do ativo foram atualizados.", null);
+        assetValidator.validateState(computer.getEquipmentState(), computer.getStatus());
+        assetValidator.validateAllocationConsistency(
+                computer.getStatus(), computer.getLocation(), computer.getCollaborator(), null);
 
-        return computerMapper.toResponseDTO(updatedComputer);
+        Computer saved = computerRepository.save(computer);
+
+        assetHistoryService.registerEvent(saved, HistoryEventType.ATUALIZACAO,
+                "Dados do ativo foram atualizados.", null);
+        historyEvents.forEach(Runnable::run);
+
+        return computerMapper.toResponseDTO(saved);
     }
 
-    private void validateUniquenessOnUpdate(ComputerUpdateDTO dto, Computer computer) {
-        if (dto.getPatrimonio() != null && !dto.getPatrimonio().isBlank() && !Objects.equals(computer.getPatrimonio(), dto.getPatrimonio())) {
-            if (assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
-                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
-            }
-        }
-        if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank() && !Objects.equals(computer.getAssetTag(), dto.getAssetTag())) {
-            if (assetRepository.existsByAssetTag(dto.getAssetTag())) {
-                throw new ResourceAlreadyExistsException("Operação não permitida: Já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
-            }
-        }
-    }
-
-    private void handleAllocationLogic(ComputerUpdateDTO dto, Computer computer) {
-        
-        // A lógica de alocação só é acionada se os IDs de alocação forem explicitamente fornecidos no DTO.
-        // Se um ID for nulo, significa que o usuário não quer mudar essa parte da alocação.
-        // Para desalocar, o frontend deve enviar um valor explícito, como 0 ou -1, que o resolver trataria como nulo.
-        // Por simplicidade aqui, vamos assumir que a presença do campo no JSON já indica uma intenção de mudança.
-        
-        // Esta verificação previne a execução desnecessária se o DTO não contiver intenção de alocação.
-        if (dto.getLocationId() == null && dto.getCollaboratorId() == null) {
-            return;
-        }
-
-        Location newLocation = resolver.optionalLocation(dto.getLocationId());
-        Collaborator newCollaborator = resolver.optionalCollaborator(dto.getCollaboratorId());
-        
-        Location oldLocation = computer.getLocation();
-        Collaborator oldCollaborator = computer.getCollaborator();
-
-        if (newLocation != null && newCollaborator != null) {
-            throw new BusinessRuleException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
-        }
-
-        computer.setLocation(newLocation);
-        computer.setCollaborator(newCollaborator);
-
-        if (newLocation != null || newCollaborator != null) {
-            computer.setStatus(AssetStatus.EM_USO);
-        } else {
-            // Apenas retorna para estoque se estava em uso e foi explicitamente desalocado
-            if (computer.getStatus() == AssetStatus.EM_USO) {
-                computer.setStatus(AssetStatus.EM_ESTOQUE);
-            }
-        }
-
-        // Registra eventos de histórico para mudanças de alocação
-        if (!Objects.equals(oldLocation, newLocation)) {
-            if (newLocation != null) assetHistoryService.registerEvent(computer, HistoryEventType.ALOCACAO, "Ativo alocado para a localização PA: " + newLocation.getPaNumber(), null);
-            if (oldLocation != null) assetHistoryService.registerEvent(computer, HistoryEventType.DEVOLUCAO, "Ativo devolvido da localização PA: " + oldLocation.getPaNumber(), null);
-        }
-        if (!Objects.equals(oldCollaborator, newCollaborator)) {
-            if (newCollaborator != null) assetHistoryService.registerEvent(computer, HistoryEventType.ALOCACAO, "Ativo alocado para o colaborador: " + newCollaborator.getName(), null);
-            if (oldCollaborator != null) assetHistoryService.registerEvent(computer, HistoryEventType.DEVOLUCAO, "Ativo devolvido pelo colaborador: " + oldCollaborator.getName(), null);
-        }
-    }
+    // ══════════════════════════════════════════════════════════════════════
+    // COMPONENTES
+    // ══════════════════════════════════════════════════════════════════════
 
     @Transactional
     public ComputerResponseDTO swapComponent(Long computerId, Long componentToUninstallId, Long componentToInstallId) {
-        Computer computer = resolver.requireComputer(computerId);
+        Computer computer             = resolver.requireComputer(computerId);
         Component componentToUninstall = resolver.requireComponent(componentToUninstallId);
-        Component componentToInstall = resolver.requireComponent(componentToInstallId);
+        Component componentToInstall   = resolver.requireComponent(componentToInstallId);
+
+        // ── Validações de negócio ──────────────────────────────────────
+
+        if (Objects.equals(componentToUninstallId, componentToInstallId)) {
+            throw new BusinessRuleException(
+                "Operação não permitida: não é possível trocar um componente por ele mesmo.");
+        }
 
         if (!computer.getComponents().contains(componentToUninstall)) {
-            throw new BusinessRuleException(String.format("Operação não permitida: O componente '%s' (ID: %d) não está instalado no computador '%s'.",
-                    componentToUninstall.getName(), componentToUninstallId, computer.getHostname()));
+            throw new BusinessRuleException(String.format(
+                "Operação não permitida: o componente '%s' (ID: %d) não está instalado no computador '%s'.",
+                componentToUninstall.getName(), componentToUninstallId, computer.getHostname()));
         }
 
         if (componentToInstall.getStatus() != AssetStatus.EM_ESTOQUE) {
-            throw new BusinessRuleException(String.format("Operação não permitida: O componente '%s' (ID: %d) não está em estoque e não pode ser instalado.",
-                    componentToInstall.getName(), componentToInstallId));
+            throw new BusinessRuleException(String.format(
+                "Operação não permitida: o componente '%s' (ID: %d) não está em estoque e não pode ser instalado.",
+                componentToInstall.getName(), componentToInstallId));
+        }
+
+        if (componentToInstall.getComputer() != null) {
+            throw new BusinessRuleException(String.format(
+                "Operação não permitida: o componente '%s' (ID: %d) já está vinculado a outro computador.",
+                componentToInstall.getName(), componentToInstallId));
         }
 
         if (!Objects.equals(componentToUninstall.getType(), componentToInstall.getType())) {
-            throw new BusinessRuleException(String.format("Operação não permitida: A troca só pode ser feita entre componentes do mesmo tipo. Tipo do componente atual: '%s', Tipo do novo componente: '%s'.",
-                    componentToUninstall.getType(), componentToInstall.getType()));
+            throw new BusinessRuleException(String.format(
+                "Operação não permitida: a troca só pode ser feita entre componentes do mesmo tipo. " +
+                "Tipo atual: '%s' — Tipo novo: '%s'.",
+                componentToUninstall.getType(), componentToInstall.getType()));
         }
+
+        // ── Mutação de estado ──────────────────────────────────────────
 
         componentToUninstall.setComputer(null);
         componentToUninstall.setStatus(AssetStatus.EM_ESTOQUE);
@@ -189,16 +175,115 @@ public class ComputerService {
         componentToInstall.setComputer(computer);
         componentToInstall.setStatus(AssetStatus.EM_USO);
 
-        String uninstallDetails = String.format("Componente '%s' (Tipo: %s) trocado e devolvido ao estoque.", componentToUninstall.getName(), componentToUninstall.getType());
-        assetHistoryService.registerEvent(componentToUninstall, HistoryEventType.DEVOLUCAO, uninstallDetails, null);
+        assetValidator.validateState(componentToUninstall.getEquipmentState(), componentToUninstall.getStatus());
+        assetValidator.validateState(componentToInstall.getEquipmentState(), componentToInstall.getStatus());
+        assetValidator.validateAllocationConsistency(componentToUninstall.getStatus(), null, null, null);
+        assetValidator.validateAllocationConsistency(componentToInstall.getStatus(), null, null, computer);
 
-        String installDetails = String.format("Componente '%s' (Tipo: %s) instalado via operação de troca no computador '%s'.", componentToInstall.getName(), componentToInstall.getType(), computer.getHostname());
-        assetHistoryService.registerEvent(componentToInstall, HistoryEventType.INSTALACAO, installDetails, null);
+        // ── Persistência ───────────────────────────────────────────────
 
-        computerRepository.save(computer);
         componentRepository.save(componentToUninstall);
         componentRepository.save(componentToInstall);
+        computerRepository.save(computer);
+
+        // ── Histórico ──────────────────────────────────────────────────
+
+        assetHistoryService.registerEvent(componentToUninstall, HistoryEventType.DEVOLUCAO,
+                String.format("Componente '%s' (Tipo: %s) trocado e devolvido ao estoque.",
+                        componentToUninstall.getName(), componentToUninstall.getType()), null);
+
+        assetHistoryService.registerEvent(componentToInstall, HistoryEventType.INSTALACAO,
+                String.format("Componente '%s' (Tipo: %s) instalado via troca no computador '%s'.",
+                        componentToInstall.getName(), componentToInstall.getType(), computer.getHostname()), null);
 
         return getComputerById(computerId);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // MÉTODOS PRIVADOS
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void validateUniquenessOnUpdate(ComputerUpdateDTO dto, Computer computer) {
+        if (dto.getPatrimonio() != null && !dto.getPatrimonio().isBlank()
+                && !Objects.equals(computer.getPatrimonio(), dto.getPatrimonio())
+                && assetRepository.existsByPatrimonio(dto.getPatrimonio())) {
+            throw new ResourceAlreadyExistsException(
+                "Operação não permitida: já existe outro ativo com o patrimônio: " + dto.getPatrimonio());
+        }
+        if (dto.getAssetTag() != null && !dto.getAssetTag().isBlank()
+                && !Objects.equals(computer.getAssetTag(), dto.getAssetTag())
+                && assetRepository.existsByAssetTag(dto.getAssetTag())) {
+            throw new ResourceAlreadyExistsException(
+                "Operação não permitida: já existe outro ativo com o Asset Tag: " + dto.getAssetTag());
+        }
+    }
+
+    private List<Runnable> applyAllocationChanges(ComputerUpdateDTO dto, Computer computer) {
+        boolean locationRequested     = dto.getLocationId() != null;
+        boolean collaboratorRequested = dto.getCollaboratorId() != null;
+
+        if (!locationRequested && !collaboratorRequested) {
+            return Collections.emptyList();
+        }
+
+        Location     newLocation     = resolver.optionalLocation(dto.getLocationId());
+        Collaborator newCollaborator = resolver.optionalCollaborator(dto.getCollaboratorId());
+        Location     oldLocation     = computer.getLocation();
+        Collaborator oldCollaborator = computer.getCollaborator();
+
+        // ── Validações de negócio ──────────────────────────────────────
+
+        if (newLocation != null && newCollaborator != null) {
+            throw new BusinessRuleException(
+                "Operação não permitida: um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
+        }
+
+        if (oldCollaborator != null && newLocation != null) {
+            throw new BusinessRuleException(
+                "Operação não permitida: não é possível alterar a localização enquanto o ativo está alocado a um colaborador. Devolva ao estoque primeiro.");
+        }
+
+        if (oldLocation != null && newCollaborator != null) {
+            throw new BusinessRuleException(
+                "Operação não permitida: não é possível alterar o colaborador enquanto o ativo está alocado a uma localização. Devolva ao estoque primeiro.");
+        }
+
+        // ── Mutação de estado ──────────────────────────────────────────
+
+        computer.setLocation(newLocation);
+        computer.setCollaborator(newCollaborator);
+        computer.setStatus(resolveStatus(newLocation, newCollaborator, computer.getStatus()));
+
+        // ── Coleta de eventos ──────────────────────────────────────────
+
+        List<Runnable> events = new ArrayList<>();
+
+        if (!Objects.equals(oldLocation, newLocation)) {
+            if (newLocation != null)
+                events.add(() -> assetHistoryService.registerEvent(computer, HistoryEventType.ALOCACAO,
+                        "Ativo alocado para a localização PA: " + newLocation.getPaNumber(), null));
+            if (oldLocation != null)
+                events.add(() -> assetHistoryService.registerEvent(computer, HistoryEventType.DEVOLUCAO,
+                        "Ativo devolvido da localização PA: " + oldLocation.getPaNumber(), null));
+        }
+
+        if (!Objects.equals(oldCollaborator, newCollaborator)) {
+            if (newCollaborator != null)
+                events.add(() -> assetHistoryService.registerEvent(computer, HistoryEventType.ALOCACAO,
+                        "Ativo alocado para o colaborador: " + newCollaborator.getName(), null));
+            if (oldCollaborator != null)
+                events.add(() -> assetHistoryService.registerEvent(computer, HistoryEventType.DEVOLUCAO,
+                        "Ativo devolvido pelo colaborador: " + oldCollaborator.getName(), null));
+        }
+
+        return events;
+    }
+
+    private AssetStatus resolveStatus(Location location, Collaborator collaborator, AssetStatus current) {
+        if (location != null || collaborator != null) {
+            return AssetStatus.EM_USO;
+        }
+        // não sobrescreve MANUTENÇÃO ou outros status — só regride EM_USO para EM_ESTOQUE
+        return current == AssetStatus.EM_USO ? AssetStatus.EM_ESTOQUE : current;
     }
 }

@@ -103,4 +103,11 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(errorResponse, status);
     }
+
+    @ExceptionHandler(InvalidTokenException.class)
+public ResponseEntity<ApiErrorResponse> handleInvalidToken(
+        InvalidTokenException ex, HttpServletRequest request) {
+    log.warn("Token inválido: {}", ex.getMessage());
+    return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+}
 }

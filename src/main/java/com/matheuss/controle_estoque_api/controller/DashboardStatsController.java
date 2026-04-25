@@ -2,6 +2,9 @@ package com.matheuss.controle_estoque_api.controller;
 
 import com.matheuss.controle_estoque_api.dto.KpiResponseDTO;
 import com.matheuss.controle_estoque_api.service.DashboardStatsService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,10 +19,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/stats" ) 
+@RequiredArgsConstructor
 public class DashboardStatsController {
 
-    @Autowired
-    private DashboardStatsService dashboardStatsService;
+    private final DashboardStatsService dashboardStatsService;
 
     /*
      * Endpoint para buscar a contagem de ativos agrupada por status.

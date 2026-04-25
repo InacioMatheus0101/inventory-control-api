@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+
+    # Nome do contêiner para fácil identificação
+    container_name: estoque-db
+
+    # Garante que o banco de dados reinicie automaticamente se o Docker for reiniciado
+    restart: always
+
+    # Variáveis de ambiente para configurar o banco de dados
+    environment:
+      POSTGRES_DB: controle_estoque_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 246819 
+    # Mapeamento de portas: conecta a porta 5432 do seu PC à porta 5432 do contêiner
+    # Isso permite que sua aplicação local acesse o banco como se estivesse na sua máquina
+    ports:
+      - "5432:5432"
+      
+    # Persistência de dados: crucial para não perder seus dados
+    # Mapeia um volume gerenciado pelo Docker para a pasta de dados do PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+# Declaração do volume para que o Docker o gerencie de forma segura
+volumes:
+  postgres_data:
+    driver: local

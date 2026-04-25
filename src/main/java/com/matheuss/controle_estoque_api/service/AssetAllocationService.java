@@ -4,7 +4,9 @@ import com.matheuss.controle_estoque_api.domain.*;
 import com.matheuss.controle_estoque_api.domain.enums.AssetStatus;
 import com.matheuss.controle_estoque_api.domain.enums.EquipmentState;
 import com.matheuss.controle_estoque_api.domain.history.HistoryEventType;
-import com.matheuss.controle_estoque_api.exception.BusinessRuleException; // Import da nova exceção
+import com.matheuss.controle_estoque_api.dto.AssetSimpleResponseDTO;
+import com.matheuss.controle_estoque_api.exception.BusinessRuleException;
+import com.matheuss.controle_estoque_api.mapper.AssetSimpleMapper;
 import com.matheuss.controle_estoque_api.repository.AssetRepository;
 import com.matheuss.controle_estoque_api.repository.CollaboratorRepository;
 import com.matheuss.controle_estoque_api.repository.LocationRepository;
@@ -21,9 +23,11 @@ public class AssetAllocationService {
     private final CollaboratorRepository collaboratorRepository;
     private final LocationRepository locationRepository;
     private final AssetHistoryService assetHistoryService;
+    private final AssetSimpleMapper assetSimpleMapper;  // ✅ ADICIONADO
 
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO
     @Transactional
-    public void assignToCollaborator(Long assetId, Long collaboratorId) {
+    public AssetSimpleResponseDTO assignToCollaborator(Long assetId, Long collaboratorId) {
         Asset asset = requireAsset(assetId);
         Collaborator collaborator = requireCollaborator(collaboratorId);
 
@@ -33,14 +37,19 @@ public class AssetAllocationService {
         asset.setLocation(null);
         asset.setStatus(AssetStatus.EM_USO);
 
-        assetHistoryService.registerEvent(asset, HistoryEventType.ALOCACAO,
+        Asset savedAsset = assetRepository.save(asset);  // ✅ SALVAR E CAPTURAR
+
+        assetHistoryService.registerEvent(savedAsset, HistoryEventType.ALOCACAO,
                 "Ativo alocado para o colaborador: " + collaborator.getName() + " (ID: " + collaborator.getId() + ").",
                 collaborator
         );
+
+        return assetSimpleMapper.toResponseDTO(savedAsset);  // ✅ RETORNAR DTO COM MÉTODO CORRETO
     }
 
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO
     @Transactional
-    public void assignToLocation(Long assetId, Long locationId) {
+    public AssetSimpleResponseDTO assignToLocation(Long assetId, Long locationId) {
         Asset asset = requireAsset(assetId);
         Location location = requireLocation(locationId);
 
@@ -50,14 +59,19 @@ public class AssetAllocationService {
         asset.setLocation(location);
         asset.setStatus(AssetStatus.EM_USO);
 
-        assetHistoryService.registerEvent(asset, HistoryEventType.ALOCACAO,
+        Asset savedAsset = assetRepository.save(asset);  // ✅ SALVAR E CAPTURAR
+
+        assetHistoryService.registerEvent(savedAsset, HistoryEventType.ALOCACAO,
                 "Ativo alocado para a localização: PA " + location.getPaNumber() + " (" + location.getSector() + ").",
                 null
         );
+
+        return assetSimpleMapper.toResponseDTO(savedAsset);  // ✅ RETORNAR DTO COM MÉTODO CORRETO
     }
 
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO
     @Transactional
-    public void unassignToStock(Long assetId) {
+    public AssetSimpleResponseDTO unassignToStock(Long assetId) {
         Asset asset = requireAsset(assetId);
 
         validateCanUnassignToStock(asset);
@@ -69,19 +83,22 @@ public class AssetAllocationService {
         asset.setLocation(null);
         asset.setStatus(AssetStatus.EM_ESTOQUE);
 
-        recordReturn(asset, previousCollaborator, previousLocation);
+        Asset savedAsset = assetRepository.save(asset);  // ✅ SALVAR E CAPTURAR
+
+        recordReturn(savedAsset, previousCollaborator, previousLocation);
+
+        return assetSimpleMapper.toResponseDTO(savedAsset);  // ✅ RETORNAR DTO COM MÉTODO CORRETO
     }
 
+    // ✅ CORRIGIDO: Retorna AssetSimpleResponseDTO
     @Transactional
-    public void disposeAsset(Long assetId) {
+    public AssetSimpleResponseDTO disposeAsset(Long assetId) {
         Asset asset = requireAsset(assetId);
 
         if (asset.getStatus() == AssetStatus.DESCARTADO) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException("Operação não permitida: O ativo já foi descartado.");
         }
         if (asset.getStatus() == AssetStatus.EM_USO) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException("Operação não permitida: O ativo não pode ser descartado pois está em uso.");
         }
 
@@ -102,29 +119,29 @@ public class AssetAllocationService {
         asset.setCollaborator(null);
         asset.setLocation(null);
 
-        assetHistoryService.registerEvent(asset, HistoryEventType.DESCARTE, "Ativo foi marcado como descartado.", null);
+        Asset savedAsset = assetRepository.save(asset);  // ✅ SALVAR E CAPTURAR
+
+        assetHistoryService.registerEvent(savedAsset, HistoryEventType.DESCARTE, "Ativo foi marcado como descartado.", null);
+
+        return assetSimpleMapper.toResponseDTO(savedAsset);  // ✅ RETORNAR DTO COM MÉTODO CORRETO
     }
 
     // --- Helpers ---
 
     private void validateCanAssignFromStock(Asset asset) {
         if (asset.getStatus() != AssetStatus.EM_ESTOQUE) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException("Operação não permitida: o ativo '" + asset.getAssetTag() + "' não está em estoque.");
         }
         if (asset.getCollaborator() != null || asset.getLocation() != null) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException("Operação não permitida: o ativo já está alocado.");
         }
     }
 
     private void validateCanUnassignToStock(Asset asset) {
         if (asset.getStatus() != AssetStatus.EM_USO) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException("Operação não permitida: o ativo não está em uso para ser devolvido.");
         }
         if (asset.getCollaborator() == null && asset.getLocation() == null) {
-            // Lança a exceção de regra de negócio
             throw new BusinessRuleException("Operação não permitida: o ativo não está alocado a ninguém/nenhuma PA.");
         }
     }

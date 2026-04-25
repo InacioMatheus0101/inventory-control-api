@@ -2,6 +2,9 @@ package com.matheuss.controle_estoque_api.service;
 
 
 import com.matheuss.controle_estoque_api.repository.AssetRepository;
+
+import lombok.RequiredArgsConstructor;
+
 import com.matheuss.controle_estoque_api.domain.enums.AssetStatus;
 import com.matheuss.controle_estoque_api.dto.KpiResponseDTO; 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +14,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class DashboardStatsService {
 
-    @Autowired
-    private AssetRepository assetRepository;
+    private final AssetRepository assetRepository;
 
     public Map<String, Long> getAssetCountByStatus() {
         return assetRepository.countByStatus().stream()

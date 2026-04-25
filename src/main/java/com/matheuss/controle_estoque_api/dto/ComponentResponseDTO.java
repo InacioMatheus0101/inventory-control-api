@@ -11,10 +11,12 @@ public class ComponentResponseDTO {
 
     private Long id;
     private String assetTag;
+    private String patrimonio;  
     private AssetStatus status;
     private EquipmentState equipmentState;
     private LocalDate purchaseDate;
     private String notes;
+    private Long collaboratorId;
 
     // CAMPOS ADMINISTRATIVOS (EXCEL)
     private LocalDate dataRecebimento;

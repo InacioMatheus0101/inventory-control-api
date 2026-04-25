@@ -20,7 +20,6 @@ public class PeripheralCreateDTO {
     @NotNull(message = "O estado do equipamento é obrigatório.")
     private EquipmentState equipmentState;
 
-    @NotNull(message = "A data de compra é obrigatória.")
     private LocalDate purchaseDate;
 
     private Long locationId;

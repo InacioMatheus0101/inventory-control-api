@@ -114,6 +114,18 @@ public class ComponentService {
             throw new BusinessRuleException("Operação não permitida: Um ativo não pode ser alocado para um colaborador e uma localização ao mesmo tempo.");
         }
 
+        // ✅ ADICIONADO: Validação para impedir mudança de localização quando há colaborador
+        // Se o ativo já tem um colaborador e está tentando mudar a localização
+        if (oldCollaborator != null && newLocation != null && !Objects.equals(oldLocation, newLocation)) {
+            throw new BusinessRuleException("Operação não permitida: Não é possível alterar a localização enquanto o ativo está alocado a um colaborador. Devolva ao estoque primeiro.");
+        }
+
+        // ✅ ADICIONADO: Validação para impedir mudança de colaborador quando há localização
+        // Se o ativo já tem uma localização e está tentando mudar o colaborador
+        if (oldLocation != null && newCollaborator != null && !Objects.equals(oldCollaborator, newCollaborator)) {
+            throw new BusinessRuleException("Operação não permitida: Não é possível alterar o colaborador enquanto o ativo está alocado a uma localização. Devolva ao estoque primeiro.");
+        }
+
         component.setLocation(newLocation);
         component.setCollaborator(newCollaborator);
 

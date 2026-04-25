@@ -15,26 +15,19 @@ import java.util.Objects;
 @DiscriminatorValue("COMPUTER")
 @Getter
 @Setter
-@ToString(callSuper = true, exclude = {"components"}) // Herda o toString() de Asset e exclui a lista de componentes
+@ToString(callSuper = true, exclude = {"components"})
 public class Computer extends Asset {
     
-
     private String hostname;
     private String serialNumber;
     private String cpu;
-    private int ramSizeInGB;
-    private int storageSizeInGB;
+    private Integer ramSizeInGB;
+    private Integer storageSizeInGB;
     private String os;
     private String nameComputer;
-
-    // A RELAÇÃO COM CATEGORY FOI REMOVIDA DAQUI.
-    // ELA AGORA EXISTE APENAS NA CLASSE MÃE 'Asset'.
 
     @OneToMany(mappedBy = "computer", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, orphanRemoval = true)
     @JsonIgnore
     @NotAudited
     private List<Component> components = new ArrayList<>();
-
-    // A implementação de equals() e hashCode() é herdada de Asset,
-    // então não precisamos reescrevê-la aqui.
 }

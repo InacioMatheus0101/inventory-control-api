@@ -23,17 +23,17 @@ public interface PeripheralMapper {
     @Mapping(target = "updatedAt", ignore = true)
     Peripheral toEntity(PeripheralCreateDTO dto);
 
+    @Mapping(source = "collaborator.id", target = "collaboratorId")
+    @Mapping(source = "collaborator", target = "user")
     PeripheralResponseDTO toResponseDTO(Peripheral entity);
 
     List<PeripheralResponseDTO> toResponseDTOList(List<Peripheral> list);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "id", ignore = true) // Boa prática
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "location", ignore = true)
     @Mapping(target = "computer", ignore = true)
     @Mapping(target = "collaborator", ignore = true)
-    
-    @Mapping(target = "status", ignore = true) // Impede que o Mapper sobrescreva a lógica de status do Service.
     @Mapping(target = "history", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

@@ -20,13 +20,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+// ✅ CORREÇÃO: Adicionar índices para melhorar performance nas buscas
 @Entity
-@Table(name = "asset")
+@Table(name = "asset", indexes = {
+       // ── Índices gerais do Asset ─────────────────────────────────────
+    @Index(name = "idx_asset_status",           columnList = "status"),
+    @Index(name = "idx_asset_patrimonio",       columnList = "patrimonio"),
+    @Index(name = "idx_asset_asset_tag",        columnList = "asset_tag"),
+    @Index(name = "idx_asset_type",             columnList = "asset_type"),
+    @Index(name = "idx_asset_category_id",      columnList = "category_id"),
+    @Index(name = "idx_asset_location_id",      columnList = "location_id"),
+    @Index(name = "idx_asset_collaborator_id",  columnList = "collaborator_id"),
+    @Index(name = "idx_asset_hostname",         columnList = "hostname"),
+    @Index(name = "idx_asset_serial_number",    columnList = "serial_number")
+
+})
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "asset_type")
-@Getter // Use @Getter em vez de @Data
-@Setter // Use @Setter em vez de @Data
-@ToString(exclude = {"category", "location", "collaborator", "history"}) // Exclui campos LAZY do toString()
+@Getter
+@Setter
+@ToString(exclude = {"category", "location", "collaborator", "history"})
 @EntityListeners(AuditingEntityListener.class)
 @Audited
 public abstract class Asset {
@@ -65,17 +78,17 @@ public abstract class Asset {
     private String ticketJira;
     private String ticketDevolucaoJira;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Category category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "location_id")
     @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Location location;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "collaborator_id")
     @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     private Collaborator collaborator;
@@ -92,7 +105,6 @@ public abstract class Asset {
     @NotAudited
     private List<AssetHistory> history = new ArrayList<>();
 
-    // Implementação manual e segura de equals() e hashCode()
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -1,0 +1,40 @@
+# --- Banco de Dados PostgreSQL ---
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/controle_estoque_db
+    username: postgres
+    password: ${DB_PASSWORD:246819}
+
+  # --- Hibernate ---
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+
+  # --- Spring Web ---
+  web:
+    resources:
+      static-locations: classpath:/static/
+      static-path-pattern: /static/**
+
+  mvc:
+    static-path-pattern: /static/**
+
+server:
+  servlet:
+    context-path: /
+
+# --- Segurança / JWT / CORS ---
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET:minha-chave-secreta-super-longa-e-dificil-de-adivinhar-12345}
+      access-expiration-minutes: 15
+      refresh-expiration-hours: 8
+    cors:
+      allowed-origins:
+        - http://localhost:3000
+        - http://localhost:5173

@@ -53,11 +53,14 @@ public class AssetBulkService {
 
         for (Asset savedAsset : newAssets) {
             String creationDetails = "Ativo criado em lote. NF: " + (dto.getInvoiceNumber() != null ? dto.getInvoiceNumber() : "N/A");
-            assetHistoryService.registerEvent(savedAsset, HistoryEventType.CRIACAO, creationDetails, dto.getTicketNumber(), null);
+            // ✅ CORREÇÃO: registerEvent recebe (Asset, HistoryEventType, String, Collaborator)
+            // Não passar dto.getTicketNumber() que é um String
+            assetHistoryService.registerEvent(savedAsset, HistoryEventType.CRIACAO, creationDetails, null);
 
             if (destinationCollaborator != null) {
                 String allocationDetails = "Alocação inicial para: " + destinationCollaborator.getName();
-                assetHistoryService.registerEvent(savedAsset, HistoryEventType.ALOCACAO, allocationDetails, dto.getTicketNumber(), null);
+                // ✅ CORREÇÃO: Passar o collaborator correto, não o ticketNumber
+                assetHistoryService.registerEvent(savedAsset, HistoryEventType.ALOCACAO, allocationDetails, destinationCollaborator);
             }
         }
 

@@ -28,7 +28,7 @@ public interface ComputerMapper {
     @Mapping(target = "components", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-     @Mapping(target = "nameComputer", ignore = true)
+
     Computer toEntity(ComputerCreateDTO dto);
 
     ComputerResponseDTO toResponseDTO(Computer entity);
@@ -53,6 +53,5 @@ public interface ComputerMapper {
     @Mapping(target = "components", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-     @Mapping(target = "nameComputer", ignore = true)
     void updateEntityFromDto(ComputerUpdateDTO dto, @MappingTarget Computer entity);
 }

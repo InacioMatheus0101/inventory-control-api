@@ -6,7 +6,6 @@ import org.springframework.data.jpa.domain.Specification;
 
 public class PeripheralSpecification {
 
-    // Filtro por status (busca exata).
     public static Specification<Peripheral> hasStatus(AssetStatus status) {
         return (root, query, criteriaBuilder) -> {
             if (status == null) {
@@ -16,7 +15,6 @@ public class PeripheralSpecification {
         };
     }
 
-    // Filtro por tipo (busca parcial, "contém").
     public static Specification<Peripheral> typeContains(String type) {
         return (root, query, criteriaBuilder) -> {
             if (type == null || type.isBlank()) {
@@ -26,13 +24,22 @@ public class PeripheralSpecification {
         };
     }
 
-    // Filtro por nome (busca parcial, "contém").
     public static Specification<Peripheral> nameContains(String name) {
         return (root, query, criteriaBuilder) -> {
             if (name == null || name.isBlank()) {
                 return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.like(criteriaBuilder.lower(root.get("name")), "%" + name.toLowerCase() + "%");
+        };
+    }
+
+    // ✅ CORREÇÃO item 2: padronizado para retornar conjunction() em vez de null
+    public static Specification<Peripheral> patrimonioContains(String patrimonio) {
+        return (root, query, criteriaBuilder) -> {
+            if (patrimonio == null || patrimonio.isBlank()) {
+                return criteriaBuilder.conjunction();
+            }
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get("patrimonio")), "%" + patrimonio.toLowerCase() + "%");
         };
     }
 }

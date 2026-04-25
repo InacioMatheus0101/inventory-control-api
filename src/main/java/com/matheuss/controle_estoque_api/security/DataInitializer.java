@@ -14,6 +14,8 @@ import com.matheuss.controle_estoque_api.security.UserRepository;
 import com.matheuss.controle_estoque_api.security.UserRole;
 import com.matheuss.controle_estoque_api.security.UserRoleRepository;
 
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,14 +26,15 @@ import java.util.List;
 import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private UserRoleRepository roleRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private CategoryRepository categoryRepository;
-    @Autowired private LocationRepository locationRepository;
-    @Autowired private ComputerRepository computerRepository;
+     private final UserRepository userRepository;
+     private final UserRoleRepository roleRepository;
+     private final PasswordEncoder passwordEncoder;
+   private final CategoryRepository categoryRepository;
+     private final LocationRepository locationRepository;
+     private final ComputerRepository computerRepository;
 
     @Override
     public void run(String... args) throws Exception {
