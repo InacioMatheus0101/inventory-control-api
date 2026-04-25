@@ -19,27 +19,43 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class );
-
-    // --- TRATAMENTO DE EXCEÇÕES DE NEGÓCIO E DADOS ---
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleEntityNotFound(EntityNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleEntityNotFound(
+            EntityNotFoundException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
-    public ResponseEntity<ApiErrorResponse> handleResourceAlreadyExists(ResourceAlreadyExistsException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleResourceAlreadyExists(
+            ResourceAlreadyExistsException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(BusinessRuleException.class)
-    public ResponseEntity<ApiErrorResponse> handleBusinessRule(BusinessRuleException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleBusinessRule(
+            BusinessRuleException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidToken(
+            InvalidTokenException ex, HttpServletRequest request) {
+        log.warn("Token inválido: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex, HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
+
         Map<String, String> validationErrors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 validationErrors.put(error.getField(), error.getDefaultMessage())
@@ -55,47 +71,39 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
-    /**
-     * [NOVA MELHORIA]
-     * Captura violações de integridade do banco de dados (ex: tentar inserir um valor duplicado em um campo 'unique').
-     * Retorna 409 Conflict com uma mensagem genérica para não expor detalhes do banco.
-     */
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
         log.warn("Violação de integridade de dados: {}", ex.getMostSpecificCause().getMessage());
-        return buildErrorResponse(HttpStatus.CONFLICT, "Operação não permitida devido a uma restrição de dados (ex: valor duplicado).", request);
+        return buildErrorResponse(HttpStatus.CONFLICT,
+                "Operação não permitida devido a uma restrição de dados (ex: valor duplicado).", request);
     }
 
-    // --- TRATAMENTO DE EXCEÇÕES DE SEGURANÇA ---
-
-    /**
-     * Captura falhas de AUTENTICAÇÃO (token inválido, acesso anônimo, credenciais erradas).
-     * Retorna 401 Unauthorized.
-     */
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Não autenticado ou token inválido.", request);
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(
+            AuthenticationException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED,
+                "Não autenticado ou token inválido.", request);
     }
 
-    /**
-     * Captura falhas de AUTORIZAÇÃO (usuário autenticado sem permissão para o recurso).
-     * Retorna 403 Forbidden.
-     */
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.FORBIDDEN, "Acesso negado. Você não tem permissão para executar esta ação.", request);
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN,
+                "Acesso negado. Você não tem permissão para executar esta ação.", request);
     }
-
-    // --- HANDLER GENÉRICO ---
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
-        log.error("Ocorreu um erro inesperado na requisição para '{}': ", request.getRequestURI(), ex);
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado no servidor.", request);
+    public ResponseEntity<ApiErrorResponse> handleGenericException(
+            Exception ex, HttpServletRequest request) {
+        log.error("Ocorreu um erro inesperado na requisição para '{}': ",
+                request.getRequestURI(), ex);
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Ocorreu um erro inesperado no servidor.", request);
     }
 
-    // --- MÉTODO AUXILIAR ---
-    private ResponseEntity<ApiErrorResponse> buildErrorResponse(HttpStatus status, String message, HttpServletRequest request) {
+    private ResponseEntity<ApiErrorResponse> buildErrorResponse(
+            HttpStatus status, String message, HttpServletRequest request) {
         ApiErrorResponse errorResponse = new ApiErrorResponse(
                 status.value(),
                 message,
@@ -103,11 +111,4 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(errorResponse, status);
     }
-
-    @ExceptionHandler(InvalidTokenException.class)
-public ResponseEntity<ApiErrorResponse> handleInvalidToken(
-        InvalidTokenException ex, HttpServletRequest request) {
-    log.warn("Token inválido: {}", ex.getMessage());
-    return buildErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
-}
 }

@@ -1,13 +1,11 @@
 package com.matheuss.controle_estoque_api.security;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
-public class LoginRequestDTO {
+public record LoginRequestDTO(
     @NotBlank(message = "O nome de usuário não pode ser vazio.")
-    private String username;
+    String username,
 
     @NotBlank(message = "A senha não pode ser vazia.")
-    private String password;
-}
+    String password
+) {}

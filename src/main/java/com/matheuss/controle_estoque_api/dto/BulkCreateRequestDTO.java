@@ -4,6 +4,7 @@ import com.matheuss.controle_estoque_api.domain.enums.AssetType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
 import java.util.List;
 
 @Data
@@ -15,15 +16,14 @@ public class BulkCreateRequestDTO {
     @NotNull(message = "O ID da categoria é obrigatório.")
     private Long categoryId;
 
-    // Informações da Compra (Opcionais)
+    // ── Informações da compra (opcionais) ──────────────────────────
     private String acquisitionDate;
     private String invoiceNumber;
     private String purchaseOrder;
-    private String purchaseTicket; // Chamado da Compra / SC
-    
-    private String ticketNumber; // O "chamado" que nós do TI fazemos
+    private String purchaseTicket;
+    private String ticketNumber;
 
-    // Dados de Alocação Imediata (Opcional)
+    // ── Alocação imediata (opcional) ───────────────────────────────
     private Long locationId;
     private Long collaboratorId;
 
@@ -33,20 +33,17 @@ public class BulkCreateRequestDTO {
 
     @Data
     public static class AssetIndividualData {
-        // OBRIGATÓRIOS
+
         @NotNull(message = "O patrimônio é obrigatório.")
         private String patrimonio;
 
         @NotNull(message = "O número de série é obrigatório.")
         private String serialNumber;
 
-        @NotNull(message = "O hostname é obrigatório.")
-        private String hostname; 
+        // ── opcional, apenas Computer utiliza ──────────────────────
+        private String hostname;
 
         private String model;
-
-
-        // OPCIONAL
         private String assetTag;
     }
 }

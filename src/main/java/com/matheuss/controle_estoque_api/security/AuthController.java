@@ -37,8 +37,8 @@ public class AuthController {
     ) {
         // Criar token de autenticação com username e password
         var usernamePassword = new UsernamePasswordAuthenticationToken(
-            data.getUsername(),
-            data.getPassword()
+            data.username(),
+            data.password()
         );
 
         // Autenticar usando o AuthenticationManager
